@@ -86,7 +86,7 @@ async def test_create_film_returns_workflow_steps(orchestrator):
     assert "Director" in agent_names
     assert "Screenwriter" in agent_names
     assert "Cinematographer" in agent_names
-    assert "SoundDesigner" in agent_names
+    assert "Sound Designer" in agent_names
     assert "Editor" in agent_names
     assert "Quality Review" in agent_names
 

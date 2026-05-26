@@ -249,9 +249,9 @@ class AgentOrchestrator:
             start = time.time()
 
             cin_step = _add_step(state, "Cinematographer", "running", "Planning shots and image prompts")
-            snd_step = _add_step(state, "SoundDesigner", "running", "Designing audio landscape")
+            snd_step = _add_step(state, "Sound Designer", "running", "Designing audio landscape")
             await notify(3, "Cinematographer", "running", "Planning shots and image prompts (parallel)")
-            await notify(4, "SoundDesigner", "running", "Designing audio landscape (parallel)")
+            await notify(4, "Sound Designer", "running", "Designing audio landscape (parallel)")
 
             director_out = state.get("director", {})
             script_out = state.get("script", {})
@@ -293,11 +293,11 @@ class AgentOrchestrator:
             if isinstance(snd_result, Exception):
                 errors["sound_designer"] = str(snd_result)
                 _update_step(snd_step, "error", str(snd_result))
-                logger.warning("SoundDesigner failed: %s — using fallback", snd_result)
-                new_state["sound"] = {"audio_plans": [], "agent": "SoundDesigner", "fallback": True}
+                logger.warning("Sound Designer failed: %s — using fallback", snd_result)
+                new_state["sound"] = {"audio_plans": [], "agent": "Sound Designer", "fallback": True}
             else:
                 _update_step(snd_step, "completed", "Audio design complete")
-                await notify(4, "SoundDesigner", "completed", "Audio design complete")
+                await notify(4, "Sound Designer", "completed", "Audio design complete")
                 new_state["sound"] = snd_result
 
             timings["parallel_visual_audio"] = round(time.time() - start, 2)

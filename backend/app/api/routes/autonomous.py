@@ -167,6 +167,8 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
+            "node_timings": result.get("node_timings", {}),
+            "revision_count": result.get("revision_count", 0),
         },
     )
 
