@@ -3,16 +3,24 @@ API Router - Version 1
 """
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
+    auth,
+    prompts,
     scripts,
     storyboards,
     scenes,
     voiceovers,
     videos,
-    projects
+    projects,
 )
 from app.api.routes import autonomous
 
 api_router = APIRouter()
+
+# Authentication
+api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
+
+# Prompt optimization
+api_router.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
 
 # Autonomous film pipeline
 api_router.include_router(autonomous.router, prefix="/autonomous", tags=["Autonomous"])
