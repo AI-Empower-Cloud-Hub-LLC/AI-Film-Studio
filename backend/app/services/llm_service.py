@@ -4,8 +4,12 @@ and Anthropic Claude (premium).
 
 Ollama runs locally with no API key. Google AI offers a free tier.
 Claude requires an ANTHROPIC_API_KEY for premium quality.
+
+Includes LRU cache for repeated prompts to avoid redundant API calls.
 """
+import hashlib
 import logging
+from collections import OrderedDict
 from enum import Enum
 from typing import Optional
 
@@ -57,6 +61,23 @@ class LLMService:
             claude_model
             or getattr(settings, "CLAUDE_MODEL", "claude-sonnet-4-20250514")
         )
+        self._cache: OrderedDict[str, str] = OrderedDict()
+        self._cache_max: int = 128
+
+    def _cache_key(self, prompt: str, system: str, backend: str) -> str:
+        raw = f"{backend}:{system[:100]}:{prompt}"
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    def _cache_get(self, key: str) -> Optional[str]:
+        if key in self._cache:
+            self._cache.move_to_end(key)
+            return self._cache[key]
+        return None
+
+    def _cache_put(self, key: str, value: str) -> None:
+        self._cache[key] = value
+        if len(self._cache) > self._cache_max:
+            self._cache.popitem(last=False)
 
     @property
     def active_model(self) -> str:
@@ -87,12 +108,24 @@ class LLMService:
         max_tokens: int = 4096,
         temperature: float = 0.7,
     ) -> str:
-        """Route to the configured backend."""
+        """Route to the configured backend with LRU caching."""
+        backend = self.active_backend
+        key = self._cache_key(prompt, system, backend)
+        cached = self._cache_get(key)
+        if cached is not None:
+            logger.debug("LLM cache hit for %s", key[:12])
+            return cached
+
         if self.backend == LLMBackend.CLAUDE and self.anthropic_api_key:
-            return await self._claude_generate(prompt, system, max_tokens, temperature)
-        if self.backend == LLMBackend.GOOGLE and self.google_api_key:
-            return await self._google_generate(prompt, system, max_tokens, temperature)
-        return await self._ollama_generate(prompt, system, max_tokens, temperature)
+            result = await self._claude_generate(prompt, system, max_tokens, temperature)
+        elif self.backend == LLMBackend.GOOGLE and self.google_api_key:
+            result = await self._google_generate(prompt, system, max_tokens, temperature)
+        else:
+            result = await self._ollama_generate(prompt, system, max_tokens, temperature)
+
+        if not result.startswith("["):
+            self._cache_put(key, result)
+        return result
 
     # ------------------------------------------------------------------
     # Ollama  (POST /api/generate)
@@ -223,11 +256,11 @@ class LLMService:
     # Fallback — deterministic placeholder when no LLM is reachable
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _fallback(prompt: str) -> str:
+    def _fallback(self, prompt: str) -> str:
+        backend = self.active_backend
         return (
-            f"[LLM unavailable] Generated content based on: {prompt[:200]}...\n"
-            "Start Ollama (`ollama serve`), set GOOGLE_API_KEY, or set ANTHROPIC_API_KEY."
+            f"[{backend} unavailable] Generated content based on: {prompt[:200]}...\n"
+            "Ensure your LLM backend is running and accessible."
         )
 
 

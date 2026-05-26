@@ -42,7 +42,7 @@ class PromptOptimizer:
                 max_tokens=1024,
                 temperature=0.7,
             )
-            if result and not result.startswith("[LLM unavailable]"):
+            if result and not result.startswith("["):
                 return {"optimized_prompt": result, "was_optimized": True, "original_prompt": prompt}
             return {"optimized_prompt": prompt, "was_optimized": False}
         except Exception as exc:

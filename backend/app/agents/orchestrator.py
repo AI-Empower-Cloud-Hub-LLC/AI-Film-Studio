@@ -24,6 +24,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.services.llm_service import LLMService, llm_service
+from app.services.media_pipeline import media_pipeline
+from app.services.mongo_store import mongo_store
 from .director_agent import DirectorAgent
 from .screenwriter_agent import ScreenwriterAgent
 from .cinematographer_agent import CinematographerAgent
@@ -134,6 +136,30 @@ class AgentOrchestrator:
             if final_state.get("error"):
                 return {"status": "error", "error": final_state["error"]}
 
+            # --- Media generation phase (video + voiceover) ---
+            director_out = final_state.get("director", {})
+            script_out = final_state.get("script", {})
+            cin_out = final_state.get("cinematography", {})
+            snd_out = final_state.get("sound", {})
+            scenes = director_out.get("scenes", [])
+
+            generated_media = {}
+            if scenes:
+                try:
+                    await _notify(7, "Media Generator", "running", "Generating video and voiceover")
+                    generated_media = await media_pipeline.generate_scene_media(
+                        scenes=scenes,
+                        shot_plans=cin_out.get("shot_plans", []),
+                        script_scenes=script_out.get("script_scenes", []),
+                        audio_plans=snd_out.get("audio_plans", []),
+                        style=style,
+                        on_progress=on_progress,
+                    )
+                    await _notify(7, "Media Generator", "completed", "Media generation complete")
+                except Exception as exc:
+                    logger.warning("Media generation failed: %s — continuing without media", exc)
+                    generated_media = {"error": str(exc)}
+
             run_record = {
                 "timestamp": time.time(),
                 "prompt": user_prompt,
@@ -143,8 +169,14 @@ class AgentOrchestrator:
                 "node_errors": final_state.get("node_errors", {}),
                 "revision_count": final_state.get("revision_count", 0),
                 "status": "success",
+                "video_backend": generated_media.get("video_backend", "local"),
+                "voice_backend": generated_media.get("voice_backend", "local"),
             }
             self._run_history.append(run_record)
+            try:
+                await mongo_store.save_run(run_record)
+            except Exception:
+                pass
 
             return {
                 "status": "success",
@@ -160,6 +192,7 @@ class AgentOrchestrator:
                 "workflow_steps": final_state.get("workflow_steps", []),
                 "node_timings": final_state.get("node_timings", {}),
                 "revision_count": final_state.get("revision_count", 0),
+                "generated_media": generated_media,
             }
         except Exception as exc:
             logger.exception("Film creation pipeline failed")

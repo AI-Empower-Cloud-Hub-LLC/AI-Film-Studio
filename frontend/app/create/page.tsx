@@ -36,6 +36,13 @@ interface AgentStatus {
   model: string;
   available_backends?: Record<string, boolean>;
   voice_backend?: string;
+  video_backend?: string;
+}
+
+interface MediaResult {
+  scene_number: number;
+  video: { status: string; backend?: string; output_url?: string; local_path?: string; note?: string };
+  audio: { status: string; backend?: string; path?: string; note?: string };
 }
 
 interface FilmResult {
@@ -48,6 +55,11 @@ interface FilmResult {
     workflow_steps?: WorkflowStep[];
     node_timings?: Record<string, number>;
     revision_count?: number;
+    generated_media?: {
+      scenes?: MediaResult[];
+      video_backend?: string;
+      voice_backend?: string;
+    };
   };
 }
 
@@ -298,6 +310,11 @@ export default function CreateFilm() {
                           ElevenLabs Voice
                         </span>
                       )}
+                      {agentStatus.video_backend === 'runway' && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 bg-emerald-900/50 text-emerald-300 rounded border border-emerald-700">
+                          Runway Video
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <span className="text-gray-400">Loading...</span>
@@ -343,6 +360,32 @@ export default function CreateFilm() {
                           <div key={node} className="flex justify-between text-xs">
                             <span className="text-gray-500">{node}</span>
                             <span className="text-indigo-300">{time}s</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {result.data?.generated_media?.scenes && result.data.generated_media.scenes.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-700">
+                      <p className="text-gray-400 mb-2">Generated Media:</p>
+                      <div className="flex gap-2 mb-2">
+                        <span className="text-xs px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded">
+                          Video: {result.data.generated_media.video_backend || 'local'}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded">
+                          Voice: {result.data.generated_media.voice_backend || 'local'}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {result.data.generated_media.scenes.map((scene) => (
+                          <div key={scene.scene_number} className="bg-gray-900/50 p-2 rounded text-xs">
+                            <span className="text-gray-400">Scene {scene.scene_number}:</span>
+                            <span className={`ml-2 ${scene.video.status === 'completed' ? 'text-green-400' : scene.video.status === 'placeholder' ? 'text-yellow-400' : 'text-red-400'}`}>
+                              Video: {scene.video.status}
+                            </span>
+                            <span className={`ml-2 ${scene.audio.status === 'completed' ? 'text-green-400' : scene.audio.status === 'placeholder' ? 'text-yellow-400' : 'text-gray-500'}`}>
+                              Audio: {scene.audio.status}
+                            </span>
                           </div>
                         ))}
                       </div>
