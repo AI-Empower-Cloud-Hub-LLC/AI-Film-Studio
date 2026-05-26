@@ -8,7 +8,7 @@ export default function CreateFilm() {
     prompt: '',
     style: 'cinematic',
     duration: 30,
-    model: 'claude-opus-4-6',
+    model: 'ollama',
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -21,7 +21,11 @@ export default function CreateFilm() {
       const response = await fetch('http://localhost:8000/api/v1/autonomous/create-film', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          prompt: formData.prompt,
+          style: formData.style,
+          duration: formData.duration,
+        }),
       });
       
       const data = await response.json();
@@ -97,18 +101,13 @@ export default function CreateFilm() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">AI Model</label>
-            <select
-              value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              disabled={loading}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="claude-opus-4-6">Claude Opus 4.6 (Anthropic) — Most Powerful</option>
-              <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Anthropic) — Balanced</option>
-              <option value="claude-haiku-4-5">Claude Haiku 4.5 (Anthropic) — Fastest</option>
-              <option value="gpt-4">GPT-4 (OpenAI)</option>
-            </select>
+            <label className="block text-sm font-medium mb-2">AI Backend</label>
+            <div className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-gray-300">
+              Ollama (Local LLM) — Free, no API key needed
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Powered by Mistral via Ollama. Or set GOOGLE_API_KEY for Google AI.
+            </p>
           </div>
 
           <button

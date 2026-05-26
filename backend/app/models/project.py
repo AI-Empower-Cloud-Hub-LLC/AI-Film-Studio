@@ -22,7 +22,7 @@ class Project(Base):
     prompt: Mapped[str] = mapped_column(Text)
     style: Mapped[str] = mapped_column(String(50), default="cinematic")
     duration: Mapped[int] = mapped_column(Integer, default=30)
-    model: Mapped[str] = mapped_column(String(50), default="claude-opus-4-6")
+    model: Mapped[str] = mapped_column(String(50), default="ollama")
     status: Mapped[ProjectStatus] = mapped_column(SAEnum(ProjectStatus), default=ProjectStatus.pending)
     director_vision: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

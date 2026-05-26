@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  # Ollama — Local LLM Server (FREE)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-film-studio-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
@@ -45,6 +60,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-filmstudio}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ai_film_studio}
       - REDIS_URL=redis://redis:6379/0
       - APP_ENV=development
+      - LLM_BACKEND=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
     env_file:
       - ./backend/.env
     volumes:
@@ -55,7 +73,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
 
   # Celery Worker
   celery-worker:
@@ -66,6 +87,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-filmstudio}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ai_film_studio}
       - REDIS_URL=redis://redis:6379/0
+      - LLM_BACKEND=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
     env_file:
       - ./backend/.env
     volumes:
@@ -74,7 +98,9 @@ services:
     depends_on:
       - postgres
       - redis
+      - ollama
     command: celery -A app.tasks.celery worker --loglevel=info
+    restart: unless-stopped
 
   # Frontend
   frontend:
@@ -93,8 +119,10 @@ services:
     depends_on:
       - backend
     command: npm run dev
+    restart: unless-stopped
 
 volumes:
+  ollama_data:
   postgres_data:
   redis_data:
   backend_media:

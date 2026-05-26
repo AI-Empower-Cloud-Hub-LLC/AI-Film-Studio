@@ -1,5 +1,8 @@
 """
-Application Configuration
+Application Configuration — Free-only setup.
+
+Uses Ollama (local LLM) and Google Generative AI (free tier) by default.
+No paid API keys required.
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -14,38 +17,42 @@ def generate_secret_key() -> str:
 
 class Settings(BaseSettings):
     """Application settings"""
-    
+
     # Application
     APP_NAME: str = "AI-Film-Studio"
     APP_ENV: str = "development"
     DEBUG: bool = True
     API_VERSION: str = "v1"
     SECRET_KEY: str = os.getenv("SECRET_KEY", generate_secret_key())
-    
+
     # Database
     DATABASE_URL: str = "sqlite:///./ai_film_studio.db"
-    
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
-    
-    # AI Services
-    OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
-    STABILITY_API_KEY: str = ""
-    ELEVENLABS_API_KEY: str = ""
-    REPLICATE_API_TOKEN: str = ""
-    
+
+    # LLM Backend — "ollama" (default, fully local) or "google" (free tier)
+    LLM_BACKEND: str = "ollama"
+
+    # Ollama (local LLM server — https://ollama.ai)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "mistral"
+
+    # Google Generative AI (free tier — https://ai.google.dev)
+    GOOGLE_API_KEY: str = ""
+    GOOGLE_MODEL: str = "gemini-2.0-flash"
+
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
-    
+
     # File Upload
     MAX_UPLOAD_SIZE: int = 104857600  # 100MB
     ALLOWED_EXTENSIONS: List[str] = [".mp4", ".mov", ".avi", ".png", ".jpg", ".jpeg"]
-    
+
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True

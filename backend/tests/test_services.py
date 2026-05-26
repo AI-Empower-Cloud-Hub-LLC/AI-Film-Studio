@@ -2,6 +2,8 @@
 Tests for service modules.
 """
 import pytest
+from unittest.mock import AsyncMock, patch
+
 from app.services.auth_service import (
     hash_password,
     verify_password,
@@ -12,6 +14,7 @@ from app.services.auth_service import (
 )
 from app.services.prompt_optimizer import PromptOptimizer
 from app.services.ws_manager import ConnectionManager
+from app.services.llm_service import LLMService, LLMBackend
 
 
 def test_password_hash_and_verify():
@@ -50,7 +53,7 @@ def test_decode_invalid_token():
 
 
 @pytest.mark.asyncio
-async def test_prompt_optimizer_passthrough():
+async def test_prompt_optimizer_fallback():
     optimizer = PromptOptimizer()
     result = await optimizer.optimize("A sunset over mountains", "cinematic", 30)
     assert result["optimized_prompt"] == "A sunset over mountains"
@@ -60,3 +63,47 @@ async def test_prompt_optimizer_passthrough():
 def test_ws_manager_init():
     mgr = ConnectionManager()
     assert mgr._connections == {}
+
+
+def test_llm_service_defaults():
+    svc = LLMService()
+    assert svc.backend == "ollama"
+    assert svc.ollama_model == "mistral"
+    assert "11434" in svc.ollama_base_url
+
+
+def test_llm_service_google_backend():
+    svc = LLMService(backend="google", google_api_key="test-key")
+    assert svc.backend == "google"
+    assert svc.google_api_key == "test-key"
+
+
+@pytest.mark.asyncio
+async def test_llm_service_fallback_on_error():
+    svc = LLMService(ollama_base_url="http://localhost:99999")
+    result = await svc.generate("test prompt", "system", max_tokens=100)
+    assert "[LLM unavailable]" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_service_ollama_success():
+    svc = LLMService()
+
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(return_value={"response": "test output"})
+
+    mock_post_ctx = AsyncMock()
+    mock_post_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_post_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = AsyncMock()
+    mock_session.post = lambda *a, **kw: mock_post_ctx
+
+    mock_session_ctx = AsyncMock()
+    mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    with patch("aiohttp.ClientSession", return_value=mock_session_ctx):
+        result = await svc.generate("test prompt", "system")
+        assert result == "test output"

@@ -1,5 +1,5 @@
 """
-Autonomous Film Creation API Routes
+Autonomous Film Creation API Routes — free-only LLM backends.
 """
 import json
 import uuid
@@ -19,19 +19,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Cache of orchestrators keyed by model name — avoids re-creating on every request
-# while still honouring per-request model selection.
-_orchestrators: Dict[str, AgentOrchestrator] = {}
+_orchestrator: Optional[AgentOrchestrator] = None
 
 
-def _get_orchestrator(model: str) -> AgentOrchestrator:
-    if model not in _orchestrators:
-        from app.core.config import settings
-        _orchestrators[model] = AgentOrchestrator(
-            model=model,
-            anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        )
-    return _orchestrators[model]
+def _get_orchestrator() -> AgentOrchestrator:
+    global _orchestrator
+    if _orchestrator is None:
+        _orchestrator = AgentOrchestrator.from_settings()
+    return _orchestrator
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +37,6 @@ class FilmRequest(BaseModel):
     prompt: str = Field(..., min_length=10, description="Film concept / idea")
     style: str = Field(default="cinematic", description="Visual style")
     duration: int = Field(default=30, ge=5, le=300, description="Target duration in seconds")
-    model: str = Field(default="claude-opus-4-6", description="Claude model to use")
 
 
 class FilmResponse(BaseModel):
@@ -57,27 +51,26 @@ class FilmResponse(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) -> Project:
-    """Save the completed film pipeline result to the database and return the Project."""
+def _persist_project(
+    db: Session, request: FilmRequest, result: Dict[str, Any], project_id: Optional[str] = None
+) -> Project:
     director_out = result.get("director", {})
     script_out = result.get("script", {})
     scenes_raw: List[Dict] = director_out.get("scenes", [])
     script_scenes: List[Dict] = script_out.get("script_scenes", [])
 
     project = Project(
-        id=str(uuid.uuid4()),
+        id=project_id or str(uuid.uuid4()),
         title=request.prompt[:120],
         prompt=request.prompt,
         style=request.style,
         duration=request.duration,
-        model=request.model,
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
     )
     db.add(project)
-    db.flush()  # populate project.id before adding children
+    db.flush()
 
-    # Persist each scene
     script_lookup = {s.get("scene_number"): s for s in script_scenes}
     for scene_data in scenes_raw:
         sn = scene_data.get("scene_number", 0)
@@ -97,7 +90,6 @@ def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) 
         )
         db.add(scene)
 
-    # Persist combined script as a single Script record
     if script_scenes:
         script = Script(
             id=str(uuid.uuid4()),
@@ -119,29 +111,36 @@ def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) 
 @router.post("/create-film", response_model=FilmResponse)
 async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get_db)):
     """
-    Orchestrate the full autonomous film pipeline:
+    Orchestrate the full autonomous film pipeline (LangGraph):
     Director -> Screenwriter -> Cinematographer -> Sound Designer -> Editor
     """
-    logger.info(f"Film creation started: {request.prompt[:60]}...")
+    from app.services.ws_manager import ws_manager
 
-    orchestrator = _get_orchestrator(request.model)
+    logger.info("Film creation started: %s...", request.prompt[:60])
+
+    project_id = str(uuid.uuid4())
+
+    async def _broadcast_progress(data: Dict[str, Any]):
+        await ws_manager.broadcast(project_id, {"type": "progress", **data})
+
+    orchestrator = _get_orchestrator()
 
     result = await orchestrator.create_film(
         user_prompt=request.prompt,
         style=request.style,
         duration=request.duration,
+        on_progress=_broadcast_progress,
     )
 
     if result.get("status") == "error":
-        raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+        raise HTTPException(status_code=500, detail=result.get("error", "Pipeline failed"))
 
-    # Persist to DB; surface a clear flag rather than silently swallowing failures.
     persisted = True
     try:
-        project = _persist_project(db, request, result)
+        project = _persist_project(db, request, result, project_id=project_id)
         project_id = project.id
-    except Exception as exc:
-        logger.error(f"DB persistence failed: {exc}")
+    except Exception:
+        logger.exception("Failed to persist project")
         persisted = False
         project_id = str(uuid.uuid4())
 
@@ -174,8 +173,6 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
 
 @router.get("/projects", response_model=List[Dict[str, Any]])
 def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    """List all film projects, newest first."""
-    # Use a COUNT subquery to avoid the N+1 per-project lazy-load.
     scene_count_sq = (
         db.query(func.count(Scene.id))
         .filter(Scene.project_id == Project.id)
@@ -205,7 +202,6 @@ def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db))
 
 @router.get("/projects/{project_id}", response_model=Dict[str, Any])
 def get_project(project_id: str, db: Session = Depends(get_db)):
-    """Get a single project with all its scenes and script."""
     project = (
         db.query(Project)
         .options(selectinload(Project.scenes), selectinload(Project.scripts))
@@ -228,7 +224,6 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
         "prompt": project.prompt,
         "style": project.style,
         "duration": project.duration,
-        "model": project.model,
         "status": project.status,
         "director_vision": project.director_vision,
         "created_at": project.created_at.isoformat(),
@@ -252,19 +247,14 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/agent-status")
 def get_agent_status():
-    """Return memory stats for all running orchestrators."""
     return {
         "status": "active",
-        "orchestrators": {
-            model: orch.get_agent_status()
-            for model, orch in _orchestrators.items()
-        },
+        "backend": _get_orchestrator()._llm.backend,
+        "model": _get_orchestrator()._llm.ollama_model,
     }
 
 
 @router.post("/clear-memory")
 def clear_agent_memory():
-    """Clear in-memory context from all agents."""
-    for orch in _orchestrators.values():
-        orch.clear_all_memory()
+    _get_orchestrator().clear_all_memory()
     return {"status": "success", "message": "All agent memories cleared"}
