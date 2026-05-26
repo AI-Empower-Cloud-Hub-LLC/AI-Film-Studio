@@ -71,6 +71,11 @@ def _persist_project(
         duration=request.duration,
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
+        refined_screenplay=result.get("refined_screenplay"),
+        cast_data=result.get("cast"),
+        location_data=result.get("locations"),
+        vfx_data=result.get("vfx_plan"),
+        mood_board_data=result.get("mood_board"),
     )
     db.add(project)
     db.flush()
@@ -180,6 +185,15 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "node_timings": result.get("node_timings", {}),
             "revision_count": result.get("revision_count", 0),
             "generated_media": result.get("generated_media", {}),
+            "refined_screenplay": result.get("refined_screenplay", {}),
+            "cast": result.get("cast", {}),
+            "locations": result.get("locations", {}),
+            "vfx_plan": result.get("vfx_plan", {}),
+            "mood_board": result.get("mood_board", {}),
+            "cast_images": result.get("cast_images", []),
+            "location_images": result.get("location_images", []),
+            "mood_images": result.get("mood_images", []),
+            "lip_sync": result.get("lip_sync", {}),
         },
     )
 
@@ -257,6 +271,11 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
             for s in sorted(project.scenes, key=lambda x: x.scene_number)
         ],
         "script": script_content,
+        "refined_screenplay": project.refined_screenplay,
+        "cast": project.cast_data,
+        "locations": project.location_data,
+        "vfx_plan": project.vfx_data,
+        "mood_board": project.mood_board_data,
     }
 
 
@@ -265,8 +284,10 @@ def get_agent_status():
     llm = _get_orchestrator()._llm
     from app.services.audio_generator import audio_generator
     from app.services.runway_service import runway_service
+    from app.services.wav2lip_service import wav2lip_service
     return {
         "status": "active",
+        "agents_count": 10,
         "backend": llm.active_backend,
         "model": llm.active_model,
         "available_backends": {
@@ -276,6 +297,7 @@ def get_agent_status():
         },
         "voice_backend": "elevenlabs" if audio_generator.is_elevenlabs_active else "local",
         "video_backend": "runway" if runway_service.is_configured else "local",
+        "lip_sync": wav2lip_service.status,
     }
 
 

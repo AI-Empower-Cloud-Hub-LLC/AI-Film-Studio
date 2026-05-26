@@ -60,6 +60,12 @@ interface FilmResult {
       video_backend?: string;
       voice_backend?: string;
     };
+    refined_screenplay?: { total_scenes?: number };
+    cast?: { total_characters?: number };
+    locations?: { total_locations?: number };
+    vfx_plan?: { total_vfx_shots?: number };
+    mood_board?: { total_images?: number };
+    lip_sync?: { backend?: string };
   };
 }
 
@@ -101,7 +107,12 @@ function PipelineGraph({ graph, steps }: { graph: GraphStructure | null; steps: 
   const orderedNodes: (GraphNode | GraphNode[])[] = [];
   const parallelGroupAdded = new Set<string>();
 
-  const nodeOrder = ['director', 'screenwriter', 'cinematographer', 'editor', 'review'];
+  const nodeOrder = [
+    'director', 'screenwriter', 'screenplay_refinement',
+    'cinematographer', 'sound_designer', 'cast_selection', 'location_research',
+    'vfx_planning', 'mood_board',
+    'editor', 'review',
+  ];
   for (const id of nodeOrder) {
     const node = graph.nodes.find(n => n.id === id);
     if (!node) continue;
@@ -117,8 +128,8 @@ function PipelineGraph({ graph, steps }: { graph: GraphStructure | null; steps: 
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-lg font-bold text-indigo-400">LangGraph Pipeline</h3>
-        <div className="flex gap-1 ml-auto">
-          {graph.features.map(f => (
+        <div className="flex gap-1 ml-auto flex-wrap justify-end">
+          {graph.features.slice(0, 6).map(f => (
             <span key={f} className="text-[10px] px-1.5 py-0.5 bg-indigo-900/50 text-indigo-300 rounded border border-indigo-700">
               {f.replace('_', ' ')}
             </span>
@@ -132,7 +143,7 @@ function PipelineGraph({ graph, steps }: { graph: GraphStructure | null; steps: 
             {Array.isArray(item) ? (
               <div>
                 <div className="text-center text-xs text-gray-500 mb-1">parallel execution</div>
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center flex-wrap">
                   {item.map(node => (
                     <NodeCard key={node.id} node={node} status={getNodeStatus(node)} step={stepsByAgent[node.label]} />
                   ))}
@@ -365,6 +376,43 @@ export default function CreateFilm() {
                       </div>
                     </div>
                   )}
+                  {/* Expanded Pipeline Data */}
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className="text-gray-400 mb-2">Pipeline Data:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {result.data?.refined_screenplay?.total_scenes && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-cyan-400">Screenplay:</span> {result.data.refined_screenplay.total_scenes} refined scenes
+                        </div>
+                      )}
+                      {result.data?.cast?.total_characters && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-yellow-400">Cast:</span> {result.data.cast.total_characters} characters
+                        </div>
+                      )}
+                      {result.data?.locations?.total_locations && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-green-400">Locations:</span> {result.data.locations.total_locations} scouted
+                        </div>
+                      )}
+                      {result.data?.vfx_plan?.total_vfx_shots && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-purple-400">VFX:</span> {result.data.vfx_plan.total_vfx_shots} shots
+                        </div>
+                      )}
+                      {result.data?.mood_board?.total_images && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-pink-400">Mood Board:</span> {result.data.mood_board.total_images} images
+                        </div>
+                      )}
+                      {result.data?.lip_sync?.backend && (
+                        <div className="bg-gray-900/50 p-2 rounded">
+                          <span className="text-orange-400">Lip Sync:</span> {result.data.lip_sync.backend}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {result.data?.generated_media?.scenes && result.data.generated_media.scenes.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-700">
                       <p className="text-gray-400 mb-2">Generated Media:</p>
