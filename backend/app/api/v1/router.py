@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     voiceovers,
     videos,
     projects,
+    media,
 )
 from app.api.routes import autonomous
 
@@ -24,6 +25,9 @@ api_router.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
 
 # Autonomous film pipeline
 api_router.include_router(autonomous.router, prefix="/autonomous", tags=["Autonomous"])
+
+# Media generation (Runway AI, etc.)
+api_router.include_router(media.router, prefix="/media", tags=["Media"])
 
 # Individual resource endpoints
 api_router.include_router(projects.router, prefix="/projects", tags=["Projects"])

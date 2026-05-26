@@ -1,7 +1,7 @@
 """
 Agent Orchestrator - Coordinates all AI agents
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Callable, Awaitable
 import logging
 
 from .director_agent import DirectorAgent
@@ -11,6 +11,8 @@ from .sound_designer_agent import SoundDesignerAgent
 from .editor_agent import EditorAgent
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[Dict[str, Any]], Awaitable[None]]
 
 
 class AgentOrchestrator:
@@ -29,48 +31,69 @@ class AgentOrchestrator:
         from app.core.config import settings
         return cls(anthropic_api_key=settings.ANTHROPIC_API_KEY)
 
-    async def create_film(self, user_prompt: str, style: str = "cinematic", duration: int = 30) -> Dict[str, Any]:
+    async def create_film(
+        self,
+        user_prompt: str,
+        style: str = "cinematic",
+        duration: int = 30,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> Dict[str, Any]:
         """Run the full autonomous film creation pipeline."""
         logger.info(f"Starting film creation: {user_prompt[:60]}...")
 
+        async def _notify(step: int, agent: str, status: str, detail: str = ""):
+            if on_progress:
+                await on_progress({
+                    "step": step,
+                    "total_steps": 5,
+                    "agent": agent,
+                    "status": status,
+                    "detail": detail,
+                })
+
         try:
             # Step 1: Director — creative vision + scene breakdown
-            logger.info("Step 1: Director creating vision...")
+            await _notify(1, "Director", "running", "Creating creative vision and scene breakdown")
             director_output = await self.director.process({
                 "prompt": user_prompt, "style": style, "duration": duration
             })
+            await _notify(1, "Director", "completed", f"{len(director_output.get('scenes', []))} scenes planned")
 
             # Step 2: Screenwriter — script + dialogue
-            logger.info("Step 2: Screenwriter writing script...")
+            await _notify(2, "Screenwriter", "running", "Writing script and dialogue")
             screenwriter_output = await self.screenwriter.process({
                 "vision": director_output["vision"],
                 "scenes": director_output["scenes"],
             })
+            await _notify(2, "Screenwriter", "completed", "Script and dialogue written")
 
             # Step 3: Cinematographer — shot plans + image prompts
-            logger.info("Step 3: Cinematographer planning shots...")
+            await _notify(3, "Cinematographer", "running", "Planning shots and image prompts")
             cinematographer_output = await self.cinematographer.process({
                 "scenes": director_output["scenes"],
                 "style": style,
                 "vision": director_output["vision"],
             })
+            await _notify(3, "Cinematographer", "completed", "Shot plans finalized")
 
             # Step 4: Sound Designer — music + SFX + voiceover guidance
-            logger.info("Step 4: Sound Designer planning audio...")
+            await _notify(4, "SoundDesigner", "running", "Designing audio and sound effects")
             sound_output = await self.sound_designer.process({
                 "script_scenes": screenwriter_output["script_scenes"],
                 "style": style,
                 "vision": director_output["vision"],
             })
+            await _notify(4, "SoundDesigner", "completed", "Audio design complete")
 
             # Step 5: Editor — assemble timeline
-            logger.info("Step 5: Editor assembling film...")
+            await _notify(5, "Editor", "running", "Assembling final timeline")
             media_assets = self._build_media_asset_list(director_output["scenes"])
             editor_output = await self.editor.process({
                 "scenes": director_output["scenes"],
                 "video_clips": media_assets["video_clips"],
                 "audio_files": media_assets["audio_files"],
             })
+            await _notify(5, "Editor", "completed", "Film assembled")
 
             return {
                 "status": "success",
@@ -94,6 +117,8 @@ class AgentOrchestrator:
 
         except Exception as e:
             logger.error(f"Film creation error: {str(e)}")
+            if on_progress:
+                await on_progress({"step": 0, "total_steps": 5, "agent": "System", "status": "error", "detail": str(e)})
             return {"status": "error", "error": str(e), "user_prompt": user_prompt}
 
     def _build_media_asset_list(self, scenes: list) -> Dict[str, Any]:

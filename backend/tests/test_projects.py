@@ -59,3 +59,29 @@ def test_projects_list_endpoint(client):
     res = client.get("/api/v1/projects/")
     assert res.status_code == 200
     assert isinstance(res.json(), list)
+
+
+def test_media_status_endpoint(client):
+    res = client.get("/api/v1/media/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "runway" in data
+    assert "anthropic" in data
+
+
+def test_media_models_endpoint(client):
+    res = client.get("/api/v1/media/models")
+    assert res.status_code == 200
+    data = res.json()
+    assert "models" in data
+    assert len(data["models"]) >= 2
+
+
+def test_media_generate_video_demo(client):
+    res = client.post("/api/v1/media/generate-video", json={
+        "prompt": "A beautiful sunset scene",
+        "duration": 4,
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "demo"

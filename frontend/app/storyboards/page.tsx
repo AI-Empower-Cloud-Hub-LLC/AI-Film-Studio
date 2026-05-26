@@ -6,10 +6,12 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline'
 import Sidebar from '../components/Sidebar'
+import AuthGuard from '../components/AuthGuard'
+import ErrorBoundary from '../components/ErrorBoundary'
 import { projectsApi } from '../../lib/api'
 import type { Project, Scene } from '../../lib/api'
 
-export default function StoryboardsPage() {
+function StoryboardsContent() {
   const [projects, setProjects] = useState<Project[]>([])
   const [frames, setFrames] = useState<Scene[]>([])
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
@@ -32,7 +34,7 @@ export default function StoryboardsPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
       <Sidebar />
-      <div className="pl-64">
+      <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-1">Storyboards</h1>
@@ -110,5 +112,15 @@ export default function StoryboardsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function StoryboardsPage() {
+  return (
+    <AuthGuard>
+      <ErrorBoundary>
+        <StoryboardsContent />
+      </ErrorBoundary>
+    </AuthGuard>
   )
 }

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     STABILITY_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
     REPLICATE_API_TOKEN: str = ""
+    RUNWAY_API_KEY: str = ""
     
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
