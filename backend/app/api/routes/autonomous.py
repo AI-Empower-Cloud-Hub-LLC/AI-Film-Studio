@@ -254,6 +254,18 @@ def get_agent_status():
     }
 
 
+@router.get("/graph")
+def get_graph_structure():
+    """Return the LangGraph pipeline topology for frontend visualization."""
+    return _get_orchestrator().get_graph_structure()
+
+
+@router.get("/pipeline-history")
+def get_pipeline_history():
+    """Return the history of pipeline runs with timings and error info."""
+    return {"runs": _get_orchestrator().get_run_history()}
+
+
 @router.post("/clear-memory")
 def clear_agent_memory():
     _get_orchestrator().clear_all_memory()
