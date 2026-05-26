@@ -76,6 +76,23 @@ def test_llm_service_google_backend():
     svc = LLMService(backend="google", google_api_key="test-key")
     assert svc.backend == "google"
     assert svc.google_api_key == "test-key"
+    assert svc.active_backend == "google"
+    assert svc.active_model == "gemini-2.0-flash"
+
+
+def test_llm_service_claude_backend():
+    svc = LLMService(backend="claude", anthropic_api_key="sk-ant-test")
+    assert svc.backend == "claude"
+    assert svc.anthropic_api_key == "sk-ant-test"
+    assert svc.active_backend == "claude"
+    assert svc.active_model == "claude-sonnet-4-20250514"
+
+
+def test_llm_service_claude_fallback_without_key():
+    svc = LLMService(backend="claude")
+    assert svc.backend == "claude"
+    assert svc.active_backend == "ollama"  # falls back to ollama without key
+    assert svc.active_model == "mistral"
 
 
 @pytest.mark.asyncio

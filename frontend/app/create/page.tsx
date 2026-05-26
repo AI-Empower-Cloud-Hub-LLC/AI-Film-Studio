@@ -30,6 +30,14 @@ interface WorkflowStep {
   detail: string;
 }
 
+interface AgentStatus {
+  status: string;
+  backend: string;
+  model: string;
+  available_backends?: Record<string, boolean>;
+  voice_backend?: string;
+}
+
 interface FilmResult {
   status: string;
   project_id?: string;
@@ -42,6 +50,12 @@ interface FilmResult {
     revision_count?: number;
   };
 }
+
+const BACKEND_LABELS: Record<string, { name: string; detail: string; color: string }> = {
+  ollama: { name: 'Ollama (Local LLM)', detail: 'Free, no API key needed', color: 'text-green-400' },
+  google: { name: 'Google AI (Gemini)', detail: 'Free tier', color: 'text-blue-400' },
+  claude: { name: 'Claude (Anthropic)', detail: 'Premium', color: 'text-purple-400' },
+};
 
 const NODE_STATUS_COLORS: Record<string, string> = {
   pending: 'border-gray-600 bg-gray-700 text-gray-400',
@@ -162,11 +176,16 @@ export default function CreateFilm() {
   const [result, setResult] = useState<FilmResult | null>(null);
   const [graph, setGraph] = useState<GraphStructure | null>(null);
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/v1/autonomous/graph')
       .then(r => r.json())
       .then(setGraph)
+      .catch(() => {});
+    fetch('http://localhost:8000/api/v1/autonomous/agent-status')
+      .then(r => r.json())
+      .then(setAgentStatus)
       .catch(() => {});
   }, []);
 
@@ -267,11 +286,32 @@ export default function CreateFilm() {
 
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">AI Backend</label>
-                <div className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-gray-300">
-                  Ollama (Local LLM) — Free, no API key needed
+                <div className="w-full p-3 bg-gray-700 border border-gray-600 rounded">
+                  {agentStatus ? (
+                    <div>
+                      <span className={BACKEND_LABELS[agentStatus.backend]?.color || 'text-gray-300'}>
+                        {BACKEND_LABELS[agentStatus.backend]?.name || agentStatus.backend}
+                      </span>
+                      <span className="text-gray-500 ml-2">— {BACKEND_LABELS[agentStatus.backend]?.detail || ''}</span>
+                      {agentStatus.voice_backend === 'elevenlabs' && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 bg-purple-900/50 text-purple-300 rounded border border-purple-700">
+                          ElevenLabs Voice
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">Loading...</span>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Powered by Mistral via Ollama. Or set GOOGLE_API_KEY for Google AI.
+                  {agentStatus ? (
+                    <>Model: {agentStatus.model}
+                    {agentStatus.available_backends && (
+                      <> · Available: {Object.entries(agentStatus.available_backends).filter(([, v]) => v).map(([k]) => k).join(', ')}</>
+                    )}</>
+                  ) : (
+                    'Connecting to backend...'
+                  )}
                 </p>
               </div>
 

@@ -249,10 +249,18 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/agent-status")
 def get_agent_status():
+    llm = _get_orchestrator()._llm
+    from app.services.audio_generator import audio_generator
     return {
         "status": "active",
-        "backend": _get_orchestrator()._llm.backend,
-        "model": _get_orchestrator()._llm.ollama_model,
+        "backend": llm.active_backend,
+        "model": llm.active_model,
+        "available_backends": {
+            "ollama": True,
+            "google": bool(llm.google_api_key),
+            "claude": bool(llm.anthropic_api_key),
+        },
+        "voice_backend": "elevenlabs" if audio_generator.is_elevenlabs_active else "local",
     }
 
 

@@ -1,8 +1,8 @@
 """
-Application Configuration — Free-only setup.
+Application Configuration — multi-backend setup.
 
-Uses Ollama (local LLM) and Google Generative AI (free tier) by default.
-No paid API keys required.
+Default: Ollama (local LLM, free). Optional: Google AI (free tier),
+Claude/Anthropic, ElevenLabs for premium features.
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # LLM Backend — "ollama" (default, fully local) or "google" (free tier)
+    # LLM Backend — "ollama" (default), "google" (free tier), or "claude" (premium)
     LLM_BACKEND: str = "ollama"
 
     # Ollama (local LLM server — https://ollama.ai)
@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     # Google Generative AI (free tier — https://ai.google.dev)
     GOOGLE_API_KEY: str = ""
     GOOGLE_MODEL: str = "gemini-2.0-flash"
+
+    # Anthropic Claude (premium — https://console.anthropic.com)
+    ANTHROPIC_API_KEY: str = ""
+    CLAUDE_MODEL: str = "claude-sonnet-4-20250514"
+
+    # ElevenLabs (premium voice — https://elevenlabs.io)
+    ELEVENLABS_API_KEY: str = ""
+    ELEVENLABS_MODEL: str = "eleven_multilingual_v2"
+    VOICE_BACKEND: str = "local"  # "local" (Coqui) or "elevenlabs"
 
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
