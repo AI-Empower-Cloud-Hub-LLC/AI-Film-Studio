@@ -42,7 +42,7 @@ function CreateFilmContent() {
     prompt: '',
     style: 'cinematic',
     duration: 30,
-    model: 'claude-opus-4-6',
+    model: 'gemini-flash-latest',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -176,10 +176,10 @@ function CreateFilmContent() {
                   disabled={loading}
                   className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
                 >
-                  <option value="claude-opus-4-6">Claude Opus 4.6 — Most Powerful</option>
-                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — Balanced</option>
-                  <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
-                  <option value="gpt-4">GPT-4 (OpenAI)</option>
+                  <option value="gemini-flash-latest">Gemini Flash — Fast & Free</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro — Most Powerful</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash — Balanced</option>
                 </select>
               </div>
             </div>

@@ -45,6 +45,9 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - APP_ENV=${APP_ENV:-development}
       - SECRET_KEY=${SECRET_KEY:-}
+      - LLM_BACKEND=${LLM_BACKEND:-google}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_MODEL=${GOOGLE_MODEL:-gemini-flash-latest}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
@@ -76,6 +79,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-filmstudio}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ai_film_studio}
       - REDIS_URL=redis://redis:6379/0
+      - LLM_BACKEND=${LLM_BACKEND:-google}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_MODEL=${GOOGLE_MODEL:-gemini-flash-latest}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
