@@ -46,7 +46,7 @@ export default function DashboardPage() {
     total: projects.length,
     completed: projects.filter((p) => p.status === 'completed').length,
     processing: projects.filter((p) => p.status === 'processing' || p.status === 'pending').length,
-    agents: 5,
+    agents: 10,
   }
 
   return (
