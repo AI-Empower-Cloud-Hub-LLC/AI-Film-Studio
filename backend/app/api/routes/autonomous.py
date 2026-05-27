@@ -57,7 +57,9 @@ class FilmResponse(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) -> Project:
+def _persist_project(
+    db: Session, request: FilmRequest, result: Dict[str, Any], project_id: Optional[str] = None
+) -> Project:
     """Save the completed film pipeline result to the database and return the Project."""
     director_out = result.get("director", {})
     script_out = result.get("script", {})
@@ -65,7 +67,7 @@ def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) 
     script_scenes: List[Dict] = script_out.get("script_scenes", [])
 
     project = Project(
-        id=str(uuid.uuid4()),
+        id=project_id or str(uuid.uuid4()),
         title=request.prompt[:120],
         prompt=request.prompt,
         style=request.style,
@@ -122,7 +124,14 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
     Orchestrate the full autonomous film pipeline:
     Director -> Screenwriter -> Cinematographer -> Sound Designer -> Editor
     """
+    from app.services.ws_manager import ws_manager
+
     logger.info(f"Film creation started: {request.prompt[:60]}...")
+
+    project_id = str(uuid.uuid4())
+
+    async def _broadcast_progress(data: Dict[str, Any]):
+        await ws_manager.broadcast(project_id, {"type": "progress", **data})
 
     orchestrator = _get_orchestrator(request.model)
 
@@ -130,6 +139,7 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
         user_prompt=request.prompt,
         style=request.style,
         duration=request.duration,
+        on_progress=_broadcast_progress,
     )
 
     if result.get("status") == "error":
@@ -138,7 +148,7 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
     # Persist to DB; surface a clear flag rather than silently swallowing failures.
     persisted = True
     try:
-        project = _persist_project(db, request, result)
+        project = _persist_project(db, request, result, project_id=project_id)
         project_id = project.id
     except Exception as exc:
         logger.error(f"DB persistence failed: {exc}")
