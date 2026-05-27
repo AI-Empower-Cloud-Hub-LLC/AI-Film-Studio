@@ -1,7 +1,7 @@
 """
 AI Film Studio - Main Application Entry Point
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -18,6 +18,7 @@ from app.middleware import (
     LoggingMiddleware,
 )
 from app.database import create_tables
+from app.services.ws_manager import ws_manager
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +82,17 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.websocket("/ws/projects/{project_id}")
+async def websocket_project(websocket: WebSocket, project_id: str):
+    """WebSocket endpoint for real-time project status updates."""
+    await ws_manager.connect(websocket, project_id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket, project_id)
 
 
 if __name__ == "__main__":
