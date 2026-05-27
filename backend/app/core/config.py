@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # AI Services
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    GOOGLE_MODEL: str = "gemini-2.0-flash"
     STABILITY_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
     REPLICATE_API_TOKEN: str = ""
