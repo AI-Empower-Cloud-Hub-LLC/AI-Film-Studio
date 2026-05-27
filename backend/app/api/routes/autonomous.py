@@ -167,6 +167,8 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
+            "node_timings": result.get("node_timings", {}),
+            "revision_count": result.get("revision_count", 0),
         },
     )
 
@@ -247,11 +249,31 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/agent-status")
 def get_agent_status():
+    llm = _get_orchestrator()._llm
+    from app.services.audio_generator import audio_generator
     return {
         "status": "active",
-        "backend": _get_orchestrator()._llm.backend,
-        "model": _get_orchestrator()._llm.ollama_model,
+        "backend": llm.active_backend,
+        "model": llm.active_model,
+        "available_backends": {
+            "ollama": True,
+            "google": bool(llm.google_api_key),
+            "claude": bool(llm.anthropic_api_key),
+        },
+        "voice_backend": "elevenlabs" if audio_generator.is_elevenlabs_active else "local",
     }
+
+
+@router.get("/graph")
+def get_graph_structure():
+    """Return the LangGraph pipeline topology for frontend visualization."""
+    return _get_orchestrator().get_graph_structure()
+
+
+@router.get("/pipeline-history")
+def get_pipeline_history():
+    """Return the history of pipeline runs with timings and error info."""
+    return {"runs": _get_orchestrator().get_run_history()}
 
 
 @router.post("/clear-memory")

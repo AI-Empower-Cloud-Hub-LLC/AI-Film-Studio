@@ -1,5 +1,5 @@
 """
-Voiceovers Endpoint - AI voice generation (local / open-source)
+Voiceovers Endpoint - AI voice generation (local or ElevenLabs)
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -59,11 +59,25 @@ async def get_voiceover(voiceover_id: str):
 
 @router.get("/voices/list")
 async def list_voices():
+    local_voices = [
+        {"id": "neutral", "name": "Neutral", "backend": "local"},
+        {"id": "deep-male", "name": "Deep Male", "backend": "local"},
+        {"id": "warm-female", "name": "Warm Female", "backend": "local"},
+    ]
+
+    elevenlabs_voices = await audio_generator.list_elevenlabs_voices()
+    for v in elevenlabs_voices:
+        v["backend"] = "elevenlabs"
+
+    backend = "elevenlabs" if audio_generator.is_elevenlabs_active else "local"
+    note = (
+        "ElevenLabs premium voices active."
+        if audio_generator.is_elevenlabs_active
+        else "Connect a local Coqui TTS server for real voice generation."
+    )
+
     return {
-        "voices": [
-            {"id": "neutral", "name": "Neutral"},
-            {"id": "deep-male", "name": "Deep Male"},
-            {"id": "warm-female", "name": "Warm Female"},
-        ],
-        "note": "Connect a local Coqui TTS server for real voice generation.",
+        "active_backend": backend,
+        "voices": local_voices + elevenlabs_voices,
+        "note": note,
     }
