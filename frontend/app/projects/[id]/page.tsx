@@ -4,7 +4,7 @@ export async function generateStaticParams() {
   return []
 }
 
-export const dynamicParams = false
+export const dynamicParams = true
 
 export default function ProjectPage() {
   return <ProjectDetail />

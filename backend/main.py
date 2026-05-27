@@ -1,9 +1,12 @@
 """
 AI Film Studio - Main Application Entry Point
 """
+from pathlib import Path
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import uvicorn
@@ -66,6 +69,13 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Include API routes
 app.include_router(api_router, prefix=f"/api/{settings.API_VERSION}")
+
+# Serve generated media files (images, audio, video)
+media_dir = Path("media")
+media_dir.mkdir(exist_ok=True)
+(media_dir / "images").mkdir(exist_ok=True)
+(media_dir / "audio").mkdir(exist_ok=True)
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 
 @app.get("/")
