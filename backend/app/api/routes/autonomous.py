@@ -271,6 +271,36 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
     }
 
 
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    style: Optional[str] = None
+    duration: Optional[int] = None
+
+
+@router.patch("/projects/{project_id}", response_model=Dict[str, Any])
+def update_project(project_id: str, body: ProjectUpdate, db: Session = Depends(get_db)):
+    """Update a project's editable fields."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(project, field, value)
+    db.commit()
+    db.refresh(project)
+    return {"id": project.id, "title": project.title, "style": project.style, "duration": project.duration, "status": project.status}
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, db: Session = Depends(get_db)):
+    """Delete a project and all its scenes/scripts."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db.delete(project)
+    db.commit()
+    return {"status": "deleted", "project_id": project_id}
+
+
 @router.get("/agent-status")
 def get_agent_status():
     """Return status for all agents including expanded pipeline."""
@@ -304,6 +334,24 @@ def get_pipeline_history():
     orchestrator = _get_orchestrator("default")
     history = orchestrator.get_run_history()
     return {"runs": history}
+
+
+@router.get("/admin/stats")
+def admin_stats(db: Session = Depends(get_db)):
+    """Admin dashboard: system-wide statistics."""
+    from app.models.user import User
+    total_projects = db.query(func.count(Project.id)).scalar()
+    total_users = db.query(func.count(User.id)).scalar()
+    total_scenes = db.query(func.count(Scene.id)).scalar()
+    completed = db.query(func.count(Project.id)).filter(Project.status == ProjectStatus.completed).scalar()
+    return {
+        "total_projects": total_projects,
+        "total_users": total_users,
+        "total_scenes": total_scenes,
+        "completed_projects": completed,
+        "agents_count": 10,
+        "pipeline_runs": len(_get_orchestrator("default").get_run_history()),
+    }
 
 
 @router.post("/clear-memory")

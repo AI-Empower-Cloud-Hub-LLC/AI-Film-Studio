@@ -223,6 +223,17 @@ export const projectsApi = {
       body: JSON.stringify({ prompt, style, duration, model }),
     })
   },
+  update(id: string, data: { title?: string; style?: string; duration?: number }) {
+    return apiFetch<{ id: string; title: string; style: string; duration: number; status: string }>(`/autonomous/projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+  delete(id: string) {
+    return apiFetch<{ status: string; project_id: string }>(`/autonomous/projects/${id}`, {
+      method: 'DELETE',
+    })
+  },
 }
 
 export type ProjectSummary = Project

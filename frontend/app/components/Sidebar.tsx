@@ -20,6 +20,7 @@ import {
   MapPinIcon,
   SwatchIcon,
   SparklesIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -36,6 +37,7 @@ const NAV = [
   { href: '/vfx-plan', label: 'VFX Plan', icon: SparklesIcon },
   { href: '/scenes', label: 'Scenes', icon: VideoCameraIcon },
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
+  { href: '/admin', label: 'Admin', icon: ChartBarIcon },
 ]
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

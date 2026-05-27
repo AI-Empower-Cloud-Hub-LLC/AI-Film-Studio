@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowLeftIcon,
@@ -11,55 +11,50 @@ import {
   DocumentTextIcon,
   VideoCameraIcon,
   ArrowDownTrayIcon,
+  PencilIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
-import { exportsApi } from '../../../lib/api'
-
-interface Scene {
-  scene_number: number
-  description: string
-  shot_type: string
-  mood: string
-  duration: number
-  visual_prompt: string
-}
-
-interface Script {
-  scene_number: number
-  narration: string
-  dialogue: { character: string; line: string }[]
-  audio_cues: string[]
-}
-
-interface ProjectData {
-  id: string
-  title: string
-  prompt: string
-  style: string
-  duration: number
-  model: string
-  status: string
-  director_vision: string
-  created_at: string
-  scenes: Scene[]
-  script: Script[]
-}
+import { exportsApi, projectsApi } from '../../../lib/api'
+import type { ProjectDetail as ProjectDetailType } from '../../../lib/api'
 
 export default function ProjectDetail() {
   const params = useParams()
+  const router = useRouter()
   const id = params?.id as string
-  const [project, setProject] = useState<ProjectData | null>(null)
+  const [project, setProject] = useState<ProjectDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'scenes' | 'scripts'>('scenes')
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!id) return
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-    fetch(`${apiUrl}/api/v1/autonomous/projects/${id}`)
-      .then((r) => r.json())
-      .then(setProject)
+    projectsApi.get(id)
+      .then((data) => { setProject(data); setEditTitle(data.title) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleSave = async () => {
+    if (!project) return
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    await fetch(`${apiUrl}/api/v1/autonomous/projects/${project.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: editTitle }),
+    })
+    setProject({ ...project, title: editTitle })
+    setEditing(false)
+  }
+
+  const handleDelete = async () => {
+    if (!project) return
+    setDeleting(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    await fetch(`${apiUrl}/api/v1/autonomous/projects/${project.id}`, { method: 'DELETE' })
+    router.push('/projects')
+  }
 
   if (loading) {
     return (
@@ -96,7 +91,19 @@ export default function ProjectDetail() {
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">{project.title}</h1>
+            {editing ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-2xl font-bold text-white bg-gray-800 border border-gray-600 rounded-lg px-3 py-1"
+                />
+                <button onClick={handleSave} className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg">Save</button>
+                <button onClick={() => setEditing(false)} className="px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-lg">Cancel</button>
+              </div>
+            ) : (
+              <h1 className="text-2xl font-bold text-white">{project.title}</h1>
+            )}
             <div className="flex items-center gap-3 mt-1">
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${statusColor[project.status] || 'bg-gray-500/10 text-gray-400 border-gray-500/30'}`}>
                 {project.status}
@@ -110,6 +117,19 @@ export default function ProjectDetail() {
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-gray-300 text-xs font-medium hover:bg-gray-700 transition-colors"
+            >
+              <PencilIcon className="h-4 w-4" /> Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex items-center gap-1 px-3 py-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-medium hover:bg-red-600/30 transition-colors disabled:opacity-50"
+            >
+              <TrashIcon className="h-4 w-4" /> {deleting ? 'Deleting...' : 'Delete'}
+            </button>
             <a
               href={exportsApi.pdfUrl(project.id)}
               target="_blank"
@@ -128,6 +148,21 @@ export default function ProjectDetail() {
             </a>
           </div>
         </div>
+
+        {/* Video Preview Player */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+        >
+          <div className="aspect-video bg-black flex items-center justify-center relative">
+            <div className="text-center">
+              <VideoCameraIcon className="h-12 w-12 text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-500 text-sm">Video preview will appear here when generated</p>
+              <p className="text-gray-600 text-xs mt-1">{project.scenes.length} scenes &middot; {project.duration}s</p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Director Vision */}
         {project.director_vision && (
