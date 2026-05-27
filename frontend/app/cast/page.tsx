@@ -98,24 +98,23 @@ export default function CastPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {cast.characters.map((ch, i) => (
                   <motion.div
-                    key={ch.name}
+                    key={ch.character_name}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
                     className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
                   >
-                    {/* Placeholder avatar */}
                     <div className="h-32 bg-gradient-to-br from-purple-900/40 to-gray-800 flex items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-purple-400">
-                        {ch.name.charAt(0)}
+                        {ch.character_name.charAt(0)}
                       </div>
                     </div>
 
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-bold text-white">{ch.name}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${roleColor(ch.role)}`}>
-                          {ch.role}
+                        <h3 className="text-lg font-bold text-white">{ch.character_name}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${roleColor(ch.role_type)}`}>
+                          {ch.role_type}
                         </span>
                       </div>
 
@@ -123,29 +122,29 @@ export default function CastPage() {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-gray-500">Age Range</span>
-                          <span className="text-gray-300">{ch.age_range}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Gender</span>
-                          <span className="text-gray-300">{ch.gender}</span>
+                          <span className="text-gray-500">Physical</span>
+                          <span className="text-gray-300 text-right ml-2">{ch.physical_description}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Budget</span>
-                          <span className="text-green-400">{ch.estimated_budget}</span>
+                          <span className="text-green-400">{ch.estimated_salary_range}</span>
                         </div>
                       </div>
 
-                      {ch.wardrobe && (
+                      {ch.suggested_actors.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-gray-700/50">
-                          <span className="text-xs text-gray-500">Wardrobe: </span>
-                          <span className="text-xs text-gray-400">{ch.wardrobe}</span>
+                          <span className="text-xs text-gray-500">Suggested: </span>
+                          <span className="text-xs text-gray-400">{ch.suggested_actors.join(', ')}</span>
                         </div>
                       )}
 
-                      {ch.notes && (
-                        <div className="mt-2">
-                          <span className="text-xs text-orange-400 italic">{ch.notes}</span>
+                      {ch.personality_traits.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {ch.personality_traits.map((t) => (
+                            <span key={t} className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full">
+                              {t}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>

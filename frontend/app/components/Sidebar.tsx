@@ -15,6 +15,11 @@ import {
   ArrowRightStartOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
+  PencilSquareIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  SwatchIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -23,7 +28,12 @@ const NAV = [
   { href: '/projects', label: 'Projects', icon: FilmIcon },
   { href: '/create', label: 'Create Film', icon: PlusCircleIcon },
   { href: '/scripts', label: 'Scripts', icon: DocumentTextIcon },
+  { href: '/screenplay', label: 'Screenplay', icon: PencilSquareIcon },
+  { href: '/cast', label: 'Cast', icon: UserGroupIcon },
+  { href: '/locations', label: 'Locations', icon: MapPinIcon },
   { href: '/storyboards', label: 'Storyboards', icon: PhotoIcon },
+  { href: '/mood-board', label: 'Mood Board', icon: SwatchIcon },
+  { href: '/vfx-plan', label: 'VFX Plan', icon: SparklesIcon },
   { href: '/scenes', label: 'Scenes', icon: VideoCameraIcon },
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
 ]
@@ -74,7 +84,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-4 py-3 border-t border-gray-800/60">
         <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
           <CpuChipIcon className="h-4 w-4" />
-          <span>5 AI Agents Active</span>
+          <span>10 AI Agents Active</span>
         </div>
       </div>
 

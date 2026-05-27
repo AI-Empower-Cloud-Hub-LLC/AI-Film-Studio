@@ -11,7 +11,7 @@ def test_graph_endpoint(client):
     assert "nodes" in data
     assert "edges" in data
     assert "features" in data
-    assert len(data["nodes"]) == 6
+    assert len(data["nodes"]) == 11
     assert any(n["id"] == "review" for n in data["nodes"])
 
 
@@ -31,10 +31,9 @@ def test_pipeline_history_empty(client):
 
 
 def test_agent_status_active(client):
-    """Agent status returns active with ollama backend."""
+    """Agent status returns active with 10 agents."""
     response = client.get("/api/v1/autonomous/agent-status")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "active"
-    assert data["backend"] == "ollama"
-    assert data["model"] == "mistral"
+    assert data["agents_count"] == 10

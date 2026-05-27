@@ -26,6 +26,11 @@ class Project(Base):
     status: Mapped[ProjectStatus] = mapped_column(SAEnum(ProjectStatus), default=ProjectStatus.pending)
     director_vision: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    refined_screenplay: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    cast_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    location_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    vfx_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    mood_board_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

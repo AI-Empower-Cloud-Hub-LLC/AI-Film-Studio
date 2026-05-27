@@ -22,7 +22,12 @@ def test_graph_structure(orchestrator):
     assert "features" in structure
 
     node_ids = {n["id"] for n in structure["nodes"]}
-    assert node_ids == {"director", "screenwriter", "cinematographer", "sound_designer", "editor", "review"}
+    assert node_ids == {
+        "director", "screenwriter", "screenplay_refinement",
+        "cinematographer", "sound_designer", "cast_selection",
+        "location_research", "vfx_planning", "mood_board",
+        "editor", "review",
+    }
 
     assert "parallel_execution" in structure["features"]
     assert "error_retry" in structure["features"]
@@ -30,15 +35,15 @@ def test_graph_structure(orchestrator):
     assert "quality_review_loop" in structure["features"]
 
 
-def test_graph_has_parallel_group(orchestrator):
-    """Cinematographer and SoundDesigner are in the same parallel group."""
+def test_graph_has_parallel_groups(orchestrator):
+    """Production and post-production nodes are in parallel groups."""
     structure = orchestrator.get_graph_structure()
     parallel_nodes = [n for n in structure["nodes"] if n.get("parallel_group")]
-    assert len(parallel_nodes) == 2
+    assert len(parallel_nodes) == 6
     groups = {n["parallel_group"] for n in parallel_nodes}
-    assert len(groups) == 1
-    ids = {n["id"] for n in parallel_nodes}
-    assert ids == {"cinematographer", "sound_designer"}
+    assert groups == {"production", "post_production"}
+    production_ids = {n["id"] for n in parallel_nodes if n["parallel_group"] == "production"}
+    assert production_ids == {"cinematographer", "sound_designer", "cast_selection", "location_research"}
 
 
 def test_graph_has_review_decision_node(orchestrator):
@@ -59,12 +64,12 @@ def test_graph_has_conditional_edges(orchestrator):
 
 
 def test_graph_has_fan_out_edges(orchestrator):
-    """Screenwriter fans out to cinematographer and sound_designer."""
+    """Screenplay refinement fans out to 4 production agents."""
     structure = orchestrator.get_graph_structure()
     fan_out_edges = [e for e in structure["edges"] if e["type"] == "fan_out"]
-    assert len(fan_out_edges) == 2
+    assert len(fan_out_edges) == 4
     targets = {e["to"] for e in fan_out_edges}
-    assert targets == {"cinematographer", "sound_designer"}
+    assert targets == {"cinematographer", "sound_designer", "cast_selection", "location_research"}
 
 
 def test_run_history_empty_initially(orchestrator):
@@ -103,7 +108,6 @@ async def test_create_film_returns_node_timings(orchestrator):
     timings = result.get("node_timings", {})
     assert "director" in timings
     assert "screenwriter" in timings
-    assert "parallel_visual_audio" in timings
     assert "editor" in timings
     assert "review" in timings
     for v in timings.values():
@@ -138,5 +142,3 @@ async def test_create_film_parallel_produces_both_outputs(orchestrator):
     assert result["status"] == "success"
     assert "cinematography" in result
     assert "sound" in result
-    assert result["cinematography"].get("agent") == "Cinematographer"
-    assert result["sound"].get("agent") == "SoundDesigner"

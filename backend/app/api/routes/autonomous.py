@@ -24,13 +24,9 @@ router = APIRouter()
 _orchestrators: Dict[str, AgentOrchestrator] = {}
 
 
-def _get_orchestrator(model: str) -> AgentOrchestrator:
+def _get_orchestrator(model: str = "default") -> AgentOrchestrator:
     if model not in _orchestrators:
-        from app.core.config import settings
-        _orchestrators[model] = AgentOrchestrator(
-            model=model,
-            anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        )
+        _orchestrators[model] = AgentOrchestrator()
     return _orchestrators[model]
 
 
@@ -75,6 +71,11 @@ def _persist_project(
         model=request.model,
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
+        refined_screenplay=result.get("refined_screenplay"),
+        cast_data=result.get("cast_data"),
+        location_data=result.get("location_data"),
+        vfx_data=result.get("vfx_data"),
+        mood_board_data=result.get("mood_board_data"),
     )
     db.add(project)
     db.flush()  # populate project.id before adding children
@@ -178,6 +179,11 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
+            "refined_screenplay": result.get("refined_screenplay"),
+            "cast_data": result.get("cast_data"),
+            "location_data": result.get("location_data"),
+            "vfx_data": result.get("vfx_data"),
+            "mood_board_data": result.get("mood_board_data"),
         },
     )
 
@@ -257,19 +263,47 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
             for s in sorted(project.scenes, key=lambda x: x.scene_number)
         ],
         "script": script_content,
+        "refined_screenplay": project.refined_screenplay,
+        "cast": project.cast_data,
+        "locations": project.location_data,
+        "vfx_plan": project.vfx_data,
+        "mood_board": project.mood_board_data,
     }
 
 
 @router.get("/agent-status")
 def get_agent_status():
-    """Return memory stats for all running orchestrators."""
+    """Return status for all agents including expanded pipeline."""
+    from app.services.wav2lip_service import wav2lip_service
     return {
         "status": "active",
+        "agents_count": 10,
+        "agents": [
+            "Director", "Screenwriter", "ScreenplayRefinement",
+            "Cinematographer", "SoundDesigner", "CastSelection",
+            "LocationResearch", "VFXPlanning", "MoodBoard", "Editor",
+        ],
+        "lip_sync": wav2lip_service.status,
         "orchestrators": {
             model: orch.get_agent_status()
             for model, orch in _orchestrators.items()
         },
     }
+
+
+@router.get("/graph")
+def get_graph_structure():
+    """Return the LangGraph pipeline topology for visualization."""
+    orchestrator = _get_orchestrator("default")
+    return orchestrator.get_graph_structure()
+
+
+@router.get("/pipeline-history")
+def get_pipeline_history():
+    """Return pipeline run history."""
+    orchestrator = _get_orchestrator("default")
+    history = orchestrator.get_run_history()
+    return {"runs": history}
 
 
 @router.post("/clear-memory")

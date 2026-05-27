@@ -66,7 +66,7 @@ def test_media_status_endpoint(client):
     assert res.status_code == 200
     data = res.json()
     assert "runway" in data
-    assert "anthropic" in data
+    assert "tts" in data
 
 
 def test_media_models_endpoint(client):

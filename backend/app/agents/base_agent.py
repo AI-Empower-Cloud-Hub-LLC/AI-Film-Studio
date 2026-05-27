@@ -15,11 +15,11 @@ DEFAULT_MODEL = "gemini-2.0-flash"
 class BaseAgent(ABC):
     """Abstract base class for all AI agents"""
 
-    def __init__(self, name: str, model: str = DEFAULT_MODEL, anthropic_api_key: str = ""):
+    def __init__(self, name: str, model: str = DEFAULT_MODEL, anthropic_api_key: str = "", llm: Optional[LLMService] = None):
         self.name = name
         self.model = model
         self.memory: list[Dict[str, Any]] = []
-        self._llm = LLMService()
+        self._llm = llm or LLMService()
         logger.info(f"Initialized {self.name} agent with model {self.model} (backend: {self._llm.active_backend})")
 
     @classmethod
