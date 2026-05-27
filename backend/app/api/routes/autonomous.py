@@ -1,5 +1,5 @@
 """
-Autonomous Film Creation API Routes — free-only LLM backends.
+Autonomous Film Creation API Routes
 """
 import json
 import uuid
@@ -12,6 +12,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.orchestrator import AgentOrchestrator
+from app.agents.crew_film_studio import CrewFilmStudio
 from app.database import get_db
 from app.models.project import Project, Scene, Script, ProjectStatus
 
@@ -19,14 +20,32 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_orchestrator: Optional[AgentOrchestrator] = None
+# Allowlist of valid Claude model IDs — prevents unbounded cache growth and
+# blocks arbitrary model strings from being passed to the Anthropic client.
+VALID_MODELS = {
+    "claude-opus-4-6",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5",
+}
+
+# CrewFilmStudio is stateless (builds a fresh Crew per call) so it is safe to
+# cache by model.  AgentOrchestrator accumulates per-agent memory, so a new
+# instance is created per request to guarantee cross-request isolation.
+_crew_studios: Dict[str, CrewFilmStudio] = {}
 
 
-def _get_orchestrator() -> AgentOrchestrator:
-    global _orchestrator
-    if _orchestrator is None:
-        _orchestrator = AgentOrchestrator.from_settings()
-    return _orchestrator
+def _get_orchestrator(model: str) -> AgentOrchestrator:
+    from app.core.config import settings
+    return AgentOrchestrator(
+        model=model,
+        anthropic_api_key=settings.ANTHROPIC_API_KEY,
+    )
+
+
+def _get_crew_studio(model: str) -> CrewFilmStudio:
+    if model not in _crew_studios:
+        _crew_studios[model] = CrewFilmStudio.from_settings(model=model)
+    return _crew_studios[model]
 
 
 # ---------------------------------------------------------------------------
@@ -37,6 +56,15 @@ class FilmRequest(BaseModel):
     prompt: str = Field(..., min_length=10, description="Film concept / idea")
     style: str = Field(default="cinematic", description="Visual style")
     duration: int = Field(default=30, ge=5, le=300, description="Target duration in seconds")
+    model: str = Field(default="claude-opus-4-6", description="Claude model to use")
+
+    def validated_model(self) -> str:
+        if self.model not in VALID_MODELS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid model '{self.model}'. Must be one of: {sorted(VALID_MODELS)}",
+            )
+        return self.model
 
 
 class FilmResponse(BaseModel):
@@ -51,26 +79,27 @@ class FilmResponse(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _persist_project(
-    db: Session, request: FilmRequest, result: Dict[str, Any], project_id: Optional[str] = None
-) -> Project:
+def _persist_project(db: Session, request: FilmRequest, result: Dict[str, Any]) -> Project:
+    """Save the completed film pipeline result to the database and return the Project."""
     director_out = result.get("director", {})
     script_out = result.get("script", {})
     scenes_raw: List[Dict] = director_out.get("scenes", [])
     script_scenes: List[Dict] = script_out.get("script_scenes", [])
 
     project = Project(
-        id=project_id or str(uuid.uuid4()),
+        id=str(uuid.uuid4()),
         title=request.prompt[:120],
         prompt=request.prompt,
         style=request.style,
         duration=request.duration,
+        model=request.model,
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
     )
     db.add(project)
-    db.flush()
+    db.flush()  # populate project.id before adding children
 
+    # Persist each scene
     script_lookup = {s.get("scene_number"): s for s in script_scenes}
     for scene_data in scenes_raw:
         sn = scene_data.get("scene_number", 0)
@@ -90,6 +119,7 @@ def _persist_project(
         )
         db.add(scene)
 
+    # Persist combined script as a single Script record
     if script_scenes:
         script = Script(
             id=str(uuid.uuid4()),
@@ -111,36 +141,31 @@ def _persist_project(
 @router.post("/create-film", response_model=FilmResponse)
 async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get_db)):
     """
-    Orchestrate the full autonomous film pipeline (LangGraph):
+    Orchestrate the full autonomous film pipeline:
     Director -> Screenwriter -> Cinematographer -> Sound Designer -> Editor
     """
-    from app.services.ws_manager import ws_manager
+    logger.info(f"Film creation started: {request.prompt[:60]}...")
+    model = request.validated_model()
 
-    logger.info("Film creation started: %s...", request.prompt[:60])
-
-    project_id = str(uuid.uuid4())
-
-    async def _broadcast_progress(data: Dict[str, Any]):
-        await ws_manager.broadcast(project_id, {"type": "progress", **data})
-
-    orchestrator = _get_orchestrator()
+    orchestrator = _get_orchestrator(model)
 
     result = await orchestrator.create_film(
         user_prompt=request.prompt,
         style=request.style,
         duration=request.duration,
-        on_progress=_broadcast_progress,
     )
 
     if result.get("status") == "error":
-        raise HTTPException(status_code=500, detail=result.get("error", "Pipeline failed"))
+        raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
 
+    # Persist to DB; surface a clear flag rather than silently swallowing failures.
     persisted = True
     try:
-        project = _persist_project(db, request, result, project_id=project_id)
+        project = _persist_project(db, request, result)
         project_id = project.id
-    except Exception:
-        logger.exception("Failed to persist project")
+    except Exception as exc:
+        logger.error(f"DB persistence failed: {exc}")
+        db.rollback()
         persisted = False
         project_id = str(uuid.uuid4())
 
@@ -167,14 +192,14 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
-            "node_timings": result.get("node_timings", {}),
-            "revision_count": result.get("revision_count", 0),
         },
     )
 
 
 @router.get("/projects", response_model=List[Dict[str, Any]])
 def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+    """List all film projects, newest first."""
+    # Use a COUNT subquery to avoid the N+1 per-project lazy-load.
     scene_count_sq = (
         db.query(func.count(Scene.id))
         .filter(Scene.project_id == Project.id)
@@ -204,6 +229,7 @@ def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db))
 
 @router.get("/projects/{project_id}", response_model=Dict[str, Any])
 def get_project(project_id: str, db: Session = Depends(get_db)):
+    """Get a single project with all its scenes and script."""
     project = (
         db.query(Project)
         .options(selectinload(Project.scenes), selectinload(Project.scripts))
@@ -226,6 +252,7 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
         "prompt": project.prompt,
         "style": project.style,
         "duration": project.duration,
+        "model": project.model,
         "status": project.status,
         "director_vision": project.director_vision,
         "created_at": project.created_at.isoformat(),
@@ -249,34 +276,81 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/agent-status")
 def get_agent_status():
-    llm = _get_orchestrator()._llm
-    from app.services.audio_generator import audio_generator
+    """Return valid models and cached crew studio count."""
     return {
         "status": "active",
-        "backend": llm.active_backend,
-        "model": llm.active_model,
-        "available_backends": {
-            "ollama": True,
-            "google": bool(llm.google_api_key),
-            "claude": bool(llm.anthropic_api_key),
-        },
-        "voice_backend": "elevenlabs" if audio_generator.is_elevenlabs_active else "local",
+        "valid_models": sorted(VALID_MODELS),
+        "cached_crew_studios": list(_crew_studios.keys()),
     }
-
-
-@router.get("/graph")
-def get_graph_structure():
-    """Return the LangGraph pipeline topology for frontend visualization."""
-    return _get_orchestrator().get_graph_structure()
-
-
-@router.get("/pipeline-history")
-def get_pipeline_history():
-    """Return the history of pipeline runs with timings and error info."""
-    return {"runs": _get_orchestrator().get_run_history()}
 
 
 @router.post("/clear-memory")
 def clear_agent_memory():
-    _get_orchestrator().clear_all_memory()
-    return {"status": "success", "message": "All agent memories cleared"}
+    """Clear cached CrewAI studios (orchestrators are per-request and stateless)."""
+    _crew_studios.clear()
+    return {"status": "success", "message": "Crew studio cache cleared"}
+
+
+# ---------------------------------------------------------------------------
+# CrewAI pipeline endpoint
+# ---------------------------------------------------------------------------
+
+@router.post("/create-film-crew", response_model=FilmResponse)
+async def create_film_with_crewai(request: FilmRequest, db: Session = Depends(get_db)):
+    """
+    Run the autonomous film pipeline using the CrewAI framework.
+
+    Agents collaborate sequentially — each receives prior agents' outputs as
+    context — mirroring the custom pipeline but using CrewAI's orchestration.
+    Results are persisted to the DB in the same way as /create-film.
+    """
+    logger.info(f"CrewAI film creation started: {request.prompt[:60]}...")
+    model = request.validated_model()
+
+    studio = _get_crew_studio(model)
+
+    result = await studio.create_film(
+        prompt=request.prompt,
+        style=request.style,
+        duration=request.duration,
+    )
+
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+
+    persisted = True
+    try:
+        project = _persist_project(db, request, result)
+        project_id = project.id
+    except Exception as exc:
+        logger.error(f"CrewAI DB persistence failed: {exc}")
+        db.rollback()
+        persisted = False
+        project_id = str(uuid.uuid4())
+
+    director_out = result.get("director", {})
+    scenes = director_out.get("scenes", [])
+
+    return FilmResponse(
+        status="success",
+        project_id=project_id,
+        persisted=persisted,
+        message=f"CrewAI pipeline complete — {len(scenes)} scenes created"
+        + ("" if persisted else " (warning: DB persistence failed)"),
+        data={
+            "project_id": project_id,
+            "framework": "crewai",
+            "prompt": request.prompt,
+            "style": request.style,
+            "duration": request.duration,
+            "scene_count": len(scenes),
+            "total_duration": sum(s.get("duration", 0) for s in scenes),
+            "director": director_out,
+            "script": result.get("script", {}),
+            "cinematography": result.get("cinematography", {}),
+            "sound": result.get("sound", {}),
+            "media_assets": result.get("media_assets", {}),
+            "final_timeline": result.get("final_timeline", {}),
+            "workflow_steps": result.get("workflow_steps", []),
+        },
+    )

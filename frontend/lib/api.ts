@@ -1,68 +1,110 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const V1 = `${BASE}/api/v1/autonomous`
 
-interface FetchOptions extends RequestInit {
-  auth?: boolean
+export interface FilmRequest {
+  prompt: string
+  style: string
+  duration: number
+  model: string
 }
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('access_token')
+export interface WorkflowStep {
+  agent: string
+  status: string
+  framework?: string
 }
 
-export async function apiFetch<T = unknown>(path: string, opts: FetchOptions = {}): Promise<T> {
-  const { auth = false, headers: extra, ...rest } = opts
-  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', ...extra as Record<string, string> }
+export interface Scene {
+  scene_number: number
+  description: string
+  shot_type: string
+  mood: string
+  duration: number
+  visual_prompt?: string
+  narration?: string
+  dialogue?: { character: string; line: string }[]
+  audio_cues?: string[]
+}
 
-  if (auth) {
-    const token = getToken()
-    if (token) hdrs['Authorization'] = `Bearer ${token}`
+export interface ShotPlan {
+  scene_number: number
+  camera_movement: string
+  lens: string
+  lighting: string
+  color_palette: string[]
+  image_generation_prompt: string
+  depth_of_field: string
+}
+
+export interface AudioPlan {
+  scene_number: number
+  music_genre: string
+  music_tempo: string
+  music_instruments: string[]
+  sound_effects: string[]
+  voiceover_tone: string
+  voiceover_pace: string
+  mixing_notes: string
+  elevenlabs_voice_id: string
+}
+
+export interface TimelineEntry {
+  scene_number: number
+  start_time: number
+  end_time: number
+  duration: number
+  transition_out: string
+  effects?: Record<string, unknown>
+}
+
+export interface FilmResult {
+  project_id: string
+  framework?: string
+  prompt: string
+  style: string
+  duration: number
+  scene_count: number
+  total_duration: number
+  director: {
+    vision: string
+    scenes: Scene[]
+    agent: string
   }
-
-  const res = await fetch(`${API_BASE}/api/v1${path}`, { headers: hdrs, ...rest })
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail || body.error || `API error ${res.status}`)
+  script: {
+    script_scenes: Scene[]
+    total_scenes: number
+    agent: string
   }
-
-  return res.json()
+  cinematography: {
+    shot_plans: ShotPlan[]
+    agent: string
+  }
+  sound: {
+    audio_plans: AudioPlan[]
+    agent: string
+  }
+  final_timeline: {
+    timeline: TimelineEntry[]
+    total_duration: number
+    scenes_count: number
+  }
+  media_assets: {
+    video_clips: string[]
+    audio_files: string[]
+    scene_count: number
+  }
+  workflow_steps: WorkflowStep[]
 }
 
-export interface AuthResponse {
-  user: UserInfo
-  tokens: { access_token: string; refresh_token: string; token_type: string }
+export interface FilmResponse {
+  status: string
+  project_id: string
+  message: string
+  persisted: boolean
+  data: FilmResult
 }
 
-export interface UserInfo {
-  id: string
-  email: string
-  username: string
-  full_name: string
-  is_active: boolean
-  is_admin: boolean
-  avatar_url: string | null
-  created_at: string
-}
-
-export const authApi = {
-  register(email: string, username: string, password: string, full_name: string) {
-    return apiFetch<AuthResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, username, password, full_name }),
-    })
-  },
-  login(email: string, password: string) {
-    return apiFetch<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    })
-  },
-  me() {
-    return apiFetch<UserInfo>('/auth/me', { auth: true })
-  },
-}
-
-export interface Project {
+export interface ProjectSummary {
   id: string
   title: string
   style: string
@@ -70,115 +112,6 @@ export interface Project {
   status: string
   scene_count: number
   created_at: string
-}
-
-export interface CastCharacter {
-  name: string
-  role: string
-  description: string
-  physical_description: string
-  age_range: string
-  gender: string
-  wardrobe: string
-  image_prompt: string
-  estimated_budget: string
-  notes: string
-}
-
-export interface CastData {
-  characters: CastCharacter[]
-  total_characters: number
-  casting_sheet: {
-    total_characters: number
-    leads: number
-    supporting: number
-    extras: number
-    estimated_total_budget: string
-  }
-}
-
-export interface LocationData {
-  locations: {
-    scene_number: number
-    location_name: string
-    type: string
-    geographic_description: string
-    visual_description: string
-    image_prompt: string
-    city_country: string
-    permit_required: boolean
-    estimated_cost: string
-    logistics: string
-    alternatives: string[]
-    weather_considerations: string
-  }[]
-  total_locations: number
-  logistics_summary: {
-    total_locations: number
-    interior_count: number
-    exterior_count: number
-    permits_needed: number
-    estimated_total_cost: string
-  }
-}
-
-export interface VFXData {
-  vfx_shots: {
-    scene_number: number
-    vfx_needed: boolean
-    techniques: string[]
-    description: string
-    complexity: string
-    estimated_cost: string
-    render_time_estimate: string
-    software_recommended: string[]
-    notes: string
-  }[]
-  total_vfx_shots: number
-  vfx_summary: {
-    total_scenes: number
-    scenes_with_vfx: number
-    complexity_breakdown: Record<string, number>
-    estimated_total_cost: string
-  }
-}
-
-export interface MoodBoardData {
-  mood_images: {
-    id: number
-    title: string
-    category: string
-    description: string
-    image_prompt: string
-    color_hex_codes: string[]
-    reference_notes: string
-  }[]
-  style_guide: {
-    primary_colors: string[]
-    accent_colors: string[]
-    typography_style: string
-    lighting_approach: string
-    texture_keywords: string[]
-    composition_rules: string[]
-    reference_films: string[]
-    overall_tone: string
-  }
-  total_images: number
-}
-
-export interface RefinedScreenplay {
-  refined_scenes: {
-    scene_number: number
-    slug_line: string
-    action_lines: string
-    dialogue: { character: string; parenthetical?: string; line: string }[]
-    camera_directions: string[]
-    transitions: string
-    production_notes: string[]
-    polished_narration: string
-  }[]
-  total_scenes: number
-  format: string
 }
 
 export interface ProjectDetail {
@@ -193,45 +126,42 @@ export interface ProjectDetail {
   created_at: string
   scenes: Scene[]
   script: Scene[]
-  refined_screenplay?: RefinedScreenplay
-  cast?: CastData
-  locations?: LocationData
-  vfx_plan?: VFXData
-  mood_board?: MoodBoardData
 }
 
-export interface Scene {
-  scene_number: number
-  description: string
-  shot_type: string
-  mood: string
-  duration: number
-  visual_prompt: string
-  narration: string
-  dialogue: { character: string; line: string }[]
-  audio_cues: string[]
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${V1}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    const detail = err.detail
+    const message = Array.isArray(detail)
+      ? detail.map((d: any) => d?.msg ?? JSON.stringify(d)).join('; ')
+      : (typeof detail === 'string' ? detail : JSON.stringify(detail) ?? 'Request failed')
+    throw new Error(message)
+  }
+  return res.json()
 }
 
-export const projectsApi = {
-  list() {
-    return apiFetch<Project[]>('/autonomous/projects')
-  },
-  get(id: string) {
-    return apiFetch<ProjectDetail>(`/autonomous/projects/${id}`)
-  },
-  createFilm(prompt: string, style: string, duration: number, model: string) {
-    return apiFetch<{ status: string; project_id: string; message: string }>('/autonomous/create-film', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, style, duration, model }),
-    })
-  },
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`${V1}${path}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    const detail = err.detail
+    const message = Array.isArray(detail)
+      ? detail.map((d: any) => d?.msg ?? JSON.stringify(d)).join('; ')
+      : (typeof detail === 'string' ? detail : JSON.stringify(detail) ?? 'Request failed')
+    throw new Error(message)
+  }
+  return res.json()
 }
 
-export const promptsApi = {
-  optimize(prompt: string, style: string, duration: number) {
-    return apiFetch<{ optimized_prompt: string; was_optimized: boolean }>('/prompts/optimize', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, style, duration }),
-    })
-  },
+export const api = {
+  createFilm: (req: FilmRequest) => post<FilmResponse>('/create-film', req),
+  createFilmCrew: (req: FilmRequest) => post<FilmResponse>('/create-film-crew', req),
+  listProjects: (skip = 0, limit = 20) =>
+    get<ProjectSummary[]>(`/projects?skip=${skip}&limit=${limit}`),
+  getProject: (id: string) => get<ProjectDetail>(`/projects/${id}`),
 }

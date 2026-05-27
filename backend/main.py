@@ -1,7 +1,7 @@
 """
 AI Film Studio - Main Application Entry Point
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -18,7 +18,6 @@ from app.middleware import (
     LoggingMiddleware,
 )
 from app.database import create_tables
-from app.services.ws_manager import ws_manager
 
 # Configure logging
 logging.basicConfig(
@@ -32,7 +31,9 @@ async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     print(f"Starting {settings.APP_NAME}...")
-    create_tables()
+    if settings.DEBUG:
+        # Dev/test convenience — production schema is managed by Alembic migrations.
+        create_tables()
     yield
     # Shutdown
     print("Shutting down AI Film Studio...")
@@ -80,17 +81,6 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
-
-
-@app.websocket("/ws/projects/{project_id}")
-async def websocket_project(websocket: WebSocket, project_id: str):
-    """WebSocket endpoint for real-time project status updates."""
-    await ws_manager.connect(websocket, project_id)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        ws_manager.disconnect(websocket, project_id)
 
 
 if __name__ == "__main__":

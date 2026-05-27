@@ -2,10 +2,8 @@
 Cinematographer Agent - Visual Composition & Shot Planning
 """
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import logging
-
-from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -19,15 +17,15 @@ Always respond with valid JSON only."""
 class CinematographerAgent(BaseAgent):
     """Turns scene descriptions into detailed visual/camera specifications."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
-        super().__init__(name="Cinematographer", llm=llm)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
+        super().__init__(name="Cinematographer", model=model, anthropic_api_key=anthropic_api_key)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         scenes = input_data.get("scenes", [])
         style = input_data.get("style", "cinematic")
         vision = input_data.get("vision", "")
 
-        logger.info("Cinematographer planning shots for %d scenes...", len(scenes))
+        logger.info(f"Cinematographer planning shots for {len(scenes)} scenes...")
 
         shot_plans = []
         for scene in scenes:
@@ -50,15 +48,15 @@ class CinematographerAgent(BaseAgent):
             "- lens (string: wide-angle/standard/telephoto/macro)\n"
             "- lighting (string: natural/golden-hour/low-key/high-key/neon/dramatic)\n"
             "- color_palette (array of 3-5 color descriptors)\n"
-            "- image_generation_prompt (string, highly detailed prompt for image generation)\n"
+            "- image_generation_prompt (string, highly detailed prompt for Stable Diffusion or similar)\n"
             "- depth_of_field (string: shallow/deep/rack-focus)"
         )
-        raw = await self._ask_llm(user_msg, SYSTEM_PROMPT, max_tokens=768)
+        raw = await self._ask_claude(user_msg, SYSTEM_PROMPT, max_tokens=768)
         try:
             start, end = raw.find("{"), raw.rfind("}") + 1
             return json.loads(raw[start:end])
         except Exception:
-            logger.warning("Cinematographer: failed to parse scene %s JSON", scene.get("scene_number"))
+            logger.warning(f"Cinematographer: failed to parse scene {scene.get('scene_number')} JSON")
             return {
                 "scene_number": scene.get("scene_number", 1),
                 "camera_movement": "static",
