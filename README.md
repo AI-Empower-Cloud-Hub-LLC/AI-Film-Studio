@@ -1,285 +1,190 @@
-# AI Film Studio 🎬🤖
+# 🎬 Autonomous Agentic AI Film Studio
 
-**Autonomous Agentic AI Film Production System** - The world's first fully autonomous AI film studio where multiple AI agents collaborate to create complete films from simple text prompts.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Next.js](https://img.shields.io/badge/next.js-14-black.svg)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/fastapi-0.109-green.svg)](https://fastapi.tiangolo.com/)
 
-## 🌟 Revolutionary Concept
+**The world's first fully autonomous AI film studio powered by collaborative AI agents.**
 
-Unlike traditional video tools, AI Film Studio uses **autonomous AI agents** that think, collaborate, and make creative decisions:
+AI 🤖 The Agent Crew
 
-- 🎭 **Director Agent**: Develops creative vision and oversees production
-- ✍️ **Screenwriter Agent**: Writes scripts and narratives  
-- ✂️ **Editor Agent**: Assembles edits with professional pacing
-- 🎥 **Cinematographer Agent** (coming): Plans shots and camera work
-- 🎵 **Sound Designer Agent** (coming): Creates audio landscapes
-- ✨ **VFX Agent** (coming): Adds visual effects
+Meet the autonomous AI agents that create your films:
 
-## 🔄 Autonomous Agent Workflow
+### 🎭 Director Agent
+**The Creative Visionary**
+- Interprets your concept into a cohesive creative vision
+- Makes high-level artistic decisions autonomously
+- Coordinates all other agents like a real film director
+- Reviews and approves final output
 
-```
-User Input → Director Agent → Screenwriter Agent → Pre-Production Planning
-                ↓                    ↓                        ↓
-         Creative Vision      Script Development      Shot Planning
-                ↓                    ↓                        ↓
-         AI Video Generation ← Cinematographer ← Production Coordination
-                ↓                    ↓                        ↓
-         Editor Agent → Sound Designer → VFX Agent → Final Assembly
-                ↓                    ↓                        ↓
-         Director Approval → Color Grading → COMPLETED FILM ✅
-```
+### ✍️ Screenwriter Agent
+**The Storyteller**
+- Writes complete scripts with dialogue and scene descriptions
+- Develops character arcs and narrative structure
+- Revises based on director feedback autonomously
+- Maintains narrative consistency
 
-## 🌟 Features
+### 🎥 Cinematographer Agent
+**The Visual Artist**
+- Plans camera angles, movements, and compositions
+- Determines lighting and visual style
+- Creates detailed shot lists
+- Ensures visual continuity across scenes
 
-### Fully Autonomous Film Creation
-- **From concept to final film** - completely autonomous
-- **Multi-agent collaboration** - agents communicate and decide together
-- **AI-driven creativity** - each agent uses LLMs to think
-- **Production workflow** - follows real film production stages
-- **Human oversight** - optional intervention at any stage
+### ✂️ Editor Agent
+**The Pacing Expert**
+- Assembles scenes into cohesive narrative
+- Determines optimal timing and rhythm
+- Applies transitions intelligently
+- Makes autonomous cut decisions
 
-### Video Generation
-- **Text-to-Video**: Generate videos from text descriptions
-- **Image-to-Video**: Animate static images into dynamic videos
-- **Script-to-Film**: Convert scripts into complete video productions
-- **AI Director**: Automated scene composition and camera angles
+### 🎵 Sound Designer Agent
+**The Audio Architect**
+- Selects or generates background music
+- Creates immersive soundscapes
+- Mixes audio levels autonomously
+- Synchronizes sound with visual beats
 
-### Video Editing
-- **Smart Editing**: AI-powered video trimming and arrangement
-- **Scene Detection**: Automatic scene boundary detection
-- **Transitions**: Intelligent transition suggestions
-- **Color Grading**: AI-assisted color correction
+### ✨ VFX Agent
+**The Enhancement Specialist**
+- Identifies enhancement opportunities
+- Applies visual effects and color grading
+- Integrates CGI elements seamlessly
+- Ensures technical quality
 
-### Enhancement
-- **Resolution Upscaling**: Enhance video quality with AI
-- **Frame Interpolation**: Smooth slow-motion effects
-- **Noise Reduction**: AI-powered denoising
-- **Audio Enhancement**: Speech enhancement and background music
+👉 **Learn more**: [Agent Architecture](./AGENT_ARCHITECTURE.md)
 
-### Creative Tools
-- **Storyboard Generator**: Auto-generate storyboards from scripts
-- **Voice Synthesis**: Text-to-speech with multiple voices
-- **Subtitle Generation**: Automatic subtitle creation and translation
-- **Background Replacement**: AI-powered green screen effects
+## 🔄 Autonomous Operation
+- **❌ No Human Micromanagement**: Agents operate autonomously without constant human intervention
+- **📈 Continuous Learning**: System improves from every film produced
 
-## 🏗️ Architecture
+## ✨ Features
 
-```
-AI-Film-Studio/
-├── backend/           # FastAPI backend server
-├── frontend/          # React frontend application
-├── ai-models/         # AI model integrations
-├── storage/           # Media storage
-└── docs/              # Documentation
-```
+- **🤖 AI Scriptwriting** - Generate professional video scripts using GPT-4
+- **🎨 Smart Storyboarding** - Automatic visual planning from scripts
+- **🎬 Scene Generation** - AI-powered video scene creation
+- **🎤 Voice Synthesis** - Natural voiceovers in multiple languages
+- **✂️ Auto Editing** - Intelligent video compilation and editing
+- **🎯 Multi-Format** - Support for landscape, portrait, and square videos
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- Docker & Docker Compose (optional)
-- CUDA-capable GPU (recommended)
+### Using Docker (Recommended)
 
-### GitHub Codespaces (Recommended)
-
-Open this repository in GitHub Codespaces for a pre-configured development environment:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new?hide_repo_select=true&ref=main)
-
-The Codespace will automatically:
-- Configure git authentication for commits and pushes
-- Install all dependencies
-- Set up the development environment
-
-See [CODESPACE_SETUP.md](./CODESPACE_SETUP.md) for more details.
-
-### Local Installation
-
-1. **Clone the repository**
 ```bash
+# Clone the repository
 git clone https://github.com/AI-Cloud-Tech-Inc/AI-Film-Studio.git
 cd AI-Film-Studio
+
+# Setup environment variables
+cp backend/.env.example backend/.env
+cp frontend/.env.local.example frontend/.env.local
+
+# Add your API keys to backend/.env
+# OPENAI_API_KEY=sk-your-key-here
+
+# Start all services
+docker-compose up -d
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000/docs
 ```
 
-2. **Backend Setup**
+## 📚 Documentation
+
+- **[Getting Started Guide](docs/GETTING_STARTED.md)** - Detailed setup instructions
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design and components
+- **[API Documentation](http://localhost:8000/docs)** - Interactive API docs (after starting backend)
+
+## 🛠️ Technology Stack
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **PostgreSQL** - Primary database
+- **Redis** - Caching and task queue
+- **Celery** - Background job processing
+- **OpenAI GPT-4** - Script generation
+- **ElevenLabs** - Voice synthesis
+- **Stability AI** - Image generation
+
+### Frontend
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **React Query** - Data fetching
+- **Framer Motion** - Animations
+
+## 📦 Project Structure
+
+```
+AI-Film-Studio/
+├── backend/           # FastAPI backend
+│   ├── app/
+│   │   ├── api/      # API endpoints
+│   │   ├── services/ # Business logic
+│   │   ├── tasks/    # Celery tasks
+│   │   └── core/     # Configuration
+│   └── main.py       # Application entry
+├── frontend/         # Next.js frontend
+│   ├── app/         # Pages and layouts
+│   ├── components/  # React components
+│   └── lib/         # Utilities
+├── docs/            # Documentation
+└── docker-compose.yml
+```
+
+## 🎯 Workflow
+
+1. **Create Project** → Define video parameters
+2. **Generate Script** → AI creates the narrative
+3. **Storyboard** → Visual scene planning
+4. **Generate Scenes** → AI creates video clips
+5. **Add Voiceover** → Synthesize narration
+6. **Compile** → Assemble final video
+7. **Export** → Download your video
+
+## 🔑 Required API Keys
+
+- **OpenAI** (Required) - [Get API Key](https://platform.openai.com)
+- **ElevenLabs** (Optional) - [Get API Key](https://elevenlabs.io)
+- **Stability AI** (Optional) - [Get API Key](https://stability.ai)
+
+Add these to `backend/.env` file.
+
+## 🧑‍💻 Development
+
+### Backend Development
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-3. **Frontend Setup**
+### Frontend Development
 ```bash
 cd frontend
 npm install
-```
-
-4. **Environment Configuration**
-```bash
-cp .env.example .env
-# Edit .env with your API keys and settings
-```
-
-### Running the Application
-
-#### Development Mode
-
-**Backend:**
-```bash
-cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Frontend:**
-```bash
-cd frontend
 npm run dev
 ```
 
-#### Docker Mode
-```bash
-docker-compose up --build
-```
+## 📊 API Endpoints
 
-Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- `POST /api/v1/projects/` - Create new project
+- `POST /api/v1/scripts/generate` - Generate script
+- `POST /api/v1/storyboards/generate` - Create storyboard
+- `POST /api/v1/scenes/generate` - Generate video scene
+- `POST /api/v1/voiceovers/generate` - Create voiceover
+- `POST /api/v1/videos/compile` - Compile final video
 
-## 📚 API Documentation
-
-### Video Generation Endpoints
-
-#### Generate Video from Text
-```http
-POST /api/v1/generate/text-to-video
-Content-Type: application/json
-
-{
-  "prompt": "A sunset over the ocean with dolphins jumping",
-  "duration": 10,
-  "resolution": "1920x1080",
-  "style": "cinematic"
-}
-```
-
-#### Generate Video from Image
-```http
-POST /api/v1/generate/image-to-video
-Content-Type: multipart/form-data
-
-image: <file>
-motion_type: "zoom_in"
-duration: 5
-```
-
-### Video Editing Endpoints
-
-#### Trim Video
-```http
-POST /api/v1/edit/trim
-Content-Type: application/json
-
-{
-  "video_id": "uuid",
-  "start_time": 5.0,
-  "end_time": 15.0
-}
-```
-
-#### Apply Transitions
-```http
-POST /api/v1/edit/transitions
-Content-Type: application/json
-
-{
-  "clips": ["clip1_id", "clip2_id"],
-  "transition_type": "fade",
-  "duration": 1.0
-}
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-```env
-# API Keys
-OPENAI_API_KEY=your_openai_key
-STABILITY_API_KEY=your_stability_key
-REPLICATE_API_KEY=your_replicate_key
-
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/aifilm
-
-# Storage
-STORAGE_TYPE=local  # or 's3', 'azure'
-STORAGE_PATH=/path/to/storage
-
-# AI Models
-MODEL_CACHE_DIR=/path/to/models
-USE_GPU=true
-GPU_DEVICE=0
-```
-
-## 🤖 AI Models
-
-The platform integrates multiple AI models:
-
-- **Stable Video Diffusion** - Text/Image to video generation
-- **RIFE** - Frame interpolation
-- **Real-ESRGAN** - Video upscaling
-- **Whisper** - Audio transcription
-- **VITS** - Voice synthesis
-- **CLIP** - Scene understanding
-
-## 🎨 Use Cases
-
-1. **Content Creators**: Rapid video prototyping and editing
-2. **Marketers**: Product demo videos and advertisements
-3. **Educators**: Educational content creation
-4. **Film Makers**: Pre-visualization and storyboarding
-5. **Game Developers**: Cutscene generation
-
-## 🛠️ Tech Stack
-
-**Backend:**
-- FastAPI
-- PyTorch
-- OpenCV
-- FFmpeg
-- PostgreSQL
-- Redis
-
-**Frontend:**
-- React 18
-- TypeScript
-- Tailwind CSS
-- Zustand
-- React Query
-
-**AI/ML:**
-- Stable Diffusion
-- Hugging Face Transformers
-- ONNX Runtime
-- TensorRT
-
-## 📖 Documentation
-
-- [API Reference](./docs/API.md)
-- [Model Integration Guide](./docs/MODELS.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
-- [Contributing Guidelines](./docs/CONTRIBUTING.md)
+Full API documentation: http://localhost:8000/docs
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](./docs/CONTRIBUTING.md).
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
@@ -287,27 +192,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Stability AI for Stable Diffusion
-- OpenAI for GPT models
-- Hugging Face for model hosting
-- FFmpeg community
+- OpenAI for GPT-4
+- ElevenLabs for voice synthesis
+- Stability AI for image generation
+- All contributors to this project
 
-## 📞 Support
+## 📧 Contact
 
-- 📧 Email: support@ai-cloud-tech.com
-- 💬 Discord: [Join our community](https://discord.gg/aifilmstudio)
-- 🐛 Issues: [GitHub Issues](https://github.com/AI-Cloud-Tech-Inc/AI-Film-Studio/issues)
-
-## 🗺️ Roadmap
-
-- [x] Basic video generation
-- [x] Video editing tools
-- [ ] Real-time collaboration
-- [ ] Advanced AI effects
-- [ ] Mobile app
-- [ ] Cloud rendering
-- [ ] Marketplace for templates
+- **GitHub**: [AI-Cloud-Tech-Inc](https://github.com/AI-Cloud-Tech-Inc)
+- **Issues**: [Report a bug](https://github.com/AI-Cloud-Tech-Inc/AI-Film-Studio/issues)
 
 ---
 
-**Made with ❤️ by AI Cloud Tech Inc**
+Made with ❤️ by AI Cloud Tech Inc
