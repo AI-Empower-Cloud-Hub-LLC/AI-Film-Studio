@@ -288,6 +288,12 @@ CI runs backend tests automatically against PostgreSQL 15 and Redis 7 on every p
 | [Getting Started](docs/GETTING_STARTED.md) | Extended onboarding guide |
 | [Enterprise](docs/ENTERPRISE.md) | Enterprise features |
 | [Integration](docs/INTEGRATION.md) | Third-party integrations |
+| [Testing Guide](TESTING.md) | Central testing reference |
+| [Backend Testing](docs/TESTING_BACKEND.md) | pytest fixtures, API and service tests |
+| [Frontend Testing](docs/TESTING_FRONTEND.md) | ESLint, build checks, adding component tests |
+| [Agent Testing](docs/TESTING_AGENTS.md) | Agent mocking, orchestrator tests, LLM integration |
+| [E2E Testing](docs/TESTING_E2E.md) | Full-stack end-to-end workflows |
+| [CI/CD Testing](docs/TESTING_CI.md) | GitHub Actions pipeline details |
 
 ## Contributing
 
