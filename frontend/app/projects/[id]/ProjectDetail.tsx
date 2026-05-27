@@ -10,7 +10,9 @@ import {
   SparklesIcon,
   DocumentTextIcon,
   VideoCameraIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
+import { exportsApi } from '../../../lib/api'
 
 interface Scene {
   scene_number: number
@@ -106,6 +108,24 @@ export default function ProjectDetail() {
                 <ClockIcon className="h-3.5 w-3.5" /> {project.duration}s
               </span>
             </div>
+          </div>
+          <div className="flex gap-2">
+            <a
+              href={exportsApi.pdfUrl(project.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-medium hover:bg-red-600/30 transition-colors"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" /> PDF
+            </a>
+            <a
+              href={exportsApi.jsonUrl(project.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" /> JSON
+            </a>
           </div>
         </div>
 

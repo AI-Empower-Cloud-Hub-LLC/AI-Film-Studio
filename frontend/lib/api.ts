@@ -124,6 +124,38 @@ export const api = {
   },
 }
 
+export const mediaApi = {
+  generateImage(prompt: string, category = 'storyboard') {
+    return apiFetch<{ status: string; path?: string; url?: string; backend: string }>('/media/generate-image', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, category }),
+    })
+  },
+  generateTTS(text: string, voice = 'neutral', pace = 'normal') {
+    return apiFetch<{ status: string; path?: string; backend: string; size_bytes?: number }>('/media/generate-tts', {
+      method: 'POST',
+      body: JSON.stringify({ text, voice, pace }),
+    })
+  },
+  status() {
+    return apiFetch<Record<string, { configured: boolean; backend?: string }>>('/media/status')
+  },
+}
+
+export const exportsApi = {
+  jsonUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/json/${projectId}`
+  },
+  pdfUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/pdf/${projectId}`
+  },
+}
+
+export function mediaUrl(path: string): string {
+  if (path.startsWith('http')) return path
+  return `${API_BASE}/${path}`
+}
+
 export const promptsApi = {
   optimize(prompt: string, style: string, duration: number) {
     return apiFetch<{ optimized_prompt: string; was_optimized: boolean }>('/prompts/optimize', {

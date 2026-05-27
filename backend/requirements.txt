@@ -42,6 +42,12 @@ requests==2.31.0
 aiohttp==3.13.3
 email-validator==2.1.0
 
+# Text-to-Speech
+gTTS>=2.5.0
+
+# PDF Generation
+reportlab>=4.0
+
 # AI/ML Prompt Optimization
 langchain-core>=0.1.0
 
