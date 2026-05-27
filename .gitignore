@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
+venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -19,26 +22,21 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Virtual environments
 venv/
-env/
 ENV/
+env/
 
 # Node
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.next/
-out/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+.yarn/
+dist/
 build/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # IDEs
 .vscode/
@@ -46,25 +44,14 @@ build/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
 
-# Logs
-logs/
-*.log
+# Environment variables
+.env
+.env.local
+.env.*.local
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-db.sqlite3
-
-# Media files (temporary and large)
-temp_media/
-uploads/
-output/
+# Media files (large)
 storage/videos/
 storage/temp/
 storage/cache/
@@ -73,25 +60,37 @@ storage/cache/
 *.mov
 *.mkv
 *.webm
+models/*.pth
+models/*.safetensors
+models/*.ckpt
 
-# API Keys and Secrets
-secrets/
-*.pem
-*.key
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
 
 # Docker
+.dockerignore
 docker-compose.override.yml
 
 # Testing
-.pytest_cache/
 .coverage
-htmlcov/
+.pytest_cache/
 coverage/
+htmlcov/
+
+# OS
+Thumbs.db
+.DS_Store
 
 # AI Models (download separately)
 ai-models/checkpoints/
 ai-models/weights/
-ai-models/cache/
-models/*.pth
-models/*.safetensors
-models/*.ckpt

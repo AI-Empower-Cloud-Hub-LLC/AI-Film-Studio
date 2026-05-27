@@ -4,7 +4,6 @@
   "description": "AI-powered film production platform",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && uvicorn main:app --reload",
     "dev:frontend": "cd frontend && npm run dev",

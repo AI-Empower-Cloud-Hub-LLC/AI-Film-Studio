@@ -1,481 +1,415 @@
-# 🧪 Testing Autonomous Agent System
+# Testing the Autonomous Agentic AI System 🤖🎬
 
-## Overview
+## Quick Start Testing
 
-This document outlines the testing strategy for the Autonomous Agentic AI Film Studio. Testing an autonomous multi-agent system requires special approaches beyond traditional software testing.
-
-## 🎯 Testing Philosophy
-
-**Key Principle**: We test both individual agent capabilities AND emergent collaborative behaviors.
-
-## 📋 Test Categories
-
-### 1. Agent Unit Tests
-
-Test each agent in isolation:
-
-#### Director Agent Tests
-```python
-class TestDirectorAgent:
-    def test_vision_interpretation(self):
-        """Test director can interpret user prompts correctly"""
-        prompt = "Create a mysterious sci-fi short film"
-        vision = director_agent.analyze_concept(prompt)
-        assert "sci-fi" in vision.genre
-        assert "mysterious" in vision.tone
-        
-    def test_creative_decisions(self):
-        """Test director makes consistent creative choices"""
-        vision = create_test_vision()
-        decisions = director_agent.make_creative_decisions(vision)
-        assert decisions.is_coherent()
-        assert decisions.aligns_with_vision(vision)
-        
-    def test_feedback_quality(self):
-        """Test director provides actionable feedback"""
-        scene = load_test_scene()
-        feedback = director_agent.review_scene(scene)
-        assert feedback.has_specific_suggestions()
-        assert feedback.maintains_positive_tone()
+### 1. Install Dependencies
+```bash
+cd backend
+pip install -r requirements.txt
 ```
 
-#### Screenwriter Agent Tests
-```python
-class TestScreenwriterAgent:
-    def test_script_generation(self):
-        """Test screenwriter creates valid scripts"""
-        concept = "A robot discovers emotions"
-        script = screenwriter_agent.generate_script(concept)
-        assert script.has_structure()
-        assert script.has_dialogue()
-        assert script.has_character_arcs()
-        
-    def test_revision_capability(self):
-        """Test screenwriter improves scripts based on feedback"""
-        initial_script = create_test_script()
-        feedback = "Make dialogue more natural"
-        revised = screenwriter_agent.revise_script(initial_script, feedback)
-        assert revised.dialogue_quality > initial_script.dialogue_quality
-        
-    def test_narrative_consistency(self):
-        """Test script maintains narrative coherence"""
-        script = generate_long_script()
-        consistency = analyze_narrative_consistency(script)
-        assert consistency.score > 0.85
+### 2. Configure Environment
+```bash
+# Copy development config
+copy ..\env.dev .env
+
+# Add your OpenAI API key
+# Edit .env and set: OPENAI_API_KEY=sk-your-key-here
 ```
 
-### 2. Agent Integration Tests
-
-Test how agents work together:
-
-```python
-class TestAgentCollaboration:
-    def test_director_screenwriter_loop(self):
-        """Test director and screenwriter collaborate effectively"""
-        concept = "Heartwarming family reunion"
-        
-        # Director creates vision
-        vision = director.analyze_concept(concept)
-        
-        # Screenwriter creates script
-        script = screenwriter.generate_script(vision)
-        
-        # Director reviews
-        review = director.review_script(script)
-        
-        # Screenwriter revises
-        final_script = screenwriter.revise_script(script, review)
-        
-        assert final_script.meets_director_vision(vision)
-        assert review.iteration_count <= 3  # Efficiency check
-        
-    def test_multi_agent_coordination(self):
-        """Test all agents work together on a film"""
-        result = orchestrator.create_film("Test concept")
-        
-        assert result.has_script
-        assert result.has_scenes
-        assert result.has_audio
-        assert result.has_editing
-        assert result.quality_score > 0.8
+### 3. Start the Server
+```bash
+python main.py
 ```
 
-### 3. Autonomy Tests
+Server starts at: http://localhost:8000
 
-Test that agents make decisions independently:
+### 4. Test Autonomous Film Creation
 
-```python
-class TestAutonomy:
-    def test_no_hardcoded_decisions(self):
-        """Ensure agents use AI for decisions, not hardcoded rules"""
-        # Run same prompt multiple times
-        results = [editor.choose_transition(scene_a, scene_b) 
-                   for _ in range(10)]
-        
-        # Should have variety (not always same answer)
-        assert len(set(results)) > 1
-        
-    def test_creative_variation(self):
-        """Test agents produce varied creative outputs"""
-        prompt = "A sunny day at the beach"
-        scripts = [screenwriter.generate_script(prompt) 
-                   for _ in range(5)]
-        
-        # Each script should be unique
-        for i, script_a in enumerate(scripts):
-            for script_b in scripts[i+1:]:
-                similarity = calculate_similarity(script_a, script_b)
-                assert similarity < 0.7  # Not too similar
-                
-    def test_context_aware_decisions(self):
-        """Test agents consider context when deciding"""
-        # Same action, different context
-        decision_comedy = director.choose_music(scene, genre="comedy")
-        decision_horror = director.choose_music(scene, genre="horror")
-        
-        assert decision_comedy != decision_horror
+#### Option A: Using the API Docs (Easiest)
+1. Open http://localhost:8000/docs
+2. Find **POST /api/v1/autonomous/create-film**
+3. Click "Try it out"
+4. Use this test request:
+```json
+{
+  "user_input": "Create a 30-second inspirational video about a person overcoming challenges to achieve their dreams",
+  "duration": 30,
+  "style": "cinematic",
+  "quality": "high"
+}
+```
+5. Click "Execute"
+
+#### Option B: Using cURL
+```bash
+curl -X POST http://localhost:8000/api/v1/autonomous/create-film \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"user_input\": \"Create a 30-second inspirational video about a person overcoming challenges\",
+    \"duration\": 30,
+    \"style\": \"cinematic\"
+  }"
 ```
 
-### 4. Communication Tests
+#### Option C: Using PowerShell
+```powershell
+$headers = @{
+    "Content-Type" = "application/json"
+}
+$body = @{
+    user_input = "Create a 30-second inspirational video about overcoming challenges"
+    duration = 30
+    style = "cinematic"
+} | ConvertTo-Json
 
-Test agent message passing:
-
-```python
-class TestAgentCommunication:
-    def test_message_routing(self):
-        """Test messages reach correct recipients"""
-        msg = AgentMessage(
-            sender=AgentRole.DIRECTOR,
-            recipient=AgentRole.SCREENWRITER,
-            content={"task": "revise_dialogue"}
-        )
-        
-        delivered = message_bus.route_message(msg)
-        assert delivered.recipient == AgentRole.SCREENWRITER
-        
-    def test_broadcast_messages(self):
-        """Test broadcast reaches all agents"""
-        msg = director.broadcast("New creative direction: dark tone")
-        
-        received = message_bus.get_broadcast_recipients(msg)
-        assert len(received) == len(ALL_AGENTS)
-        
-    def test_conflict_resolution(self):
-        """Test agents resolve disagreements"""
-        # Editor wants fast cuts, Director wants slow pacing
-        conflict = create_test_conflict()
-        resolution = conflict_resolver.resolve(conflict)
-        
-        assert resolution.has_compromise()
-        assert resolution.satisfies_both_parties()
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/autonomous/create-film" `
+    -Method Post -Headers $headers -Body $body
 ```
 
-### 5. Quality Assurance Tests
+### 5. Monitor Agent Activity
 
-Test output quality:
-
-```python
-class TestOutputQuality:
-    def test_script_quality(self):
-        """Test generated scripts meet quality standards"""
-        script = full_pipeline.generate_script("Space exploration")
-        
-        quality = quality_analyzer.evaluate_script(script)
-        assert quality.grammar_score > 0.95
-        assert quality.creativity_score > 0.7
-        assert quality.structure_score > 0.85
-        
-    def test_video_quality(self):
-        """Test generated videos meet technical standards"""
-        video = full_pipeline.generate_video("Test scene")
-        
-        assert video.resolution >= (1920, 1080)
-        assert video.frame_rate >= 24
-        assert video.audio_sync_error < 0.1  # seconds
-        
-    def test_coherence(self):
-        """Test film has narrative and visual coherence"""
-        film = full_pipeline.create_film("Complete story")
-        
-        coherence = analyze_coherence(film)
-        assert coherence.narrative_flow > 0.8
-        assert coherence.visual_continuity > 0.85
-        assert coherence.audio_video_sync > 0.95
+#### Check Agent Status
+```bash
+# See what agents are doing
+curl http://localhost:8000/api/v1/autonomous/status
 ```
 
-### 6. Performance Tests
+Response shows:
+- Current workflow stage
+- Each agent's status (idle, thinking, working)
+- Agent memory sizes
+- Project state
 
-Test system efficiency:
-
-```python
-class TestPerformance:
-    def test_generation_speed(self):
-        """Test film generation completes in reasonable time"""
-        start = time.time()
-        film = create_film("Short 30-second film")
-        duration = time.time() - start
-        
-        assert duration < 300  # 5 minutes max
-        
-    def test_concurrent_productions(self):
-        """Test system handles multiple films at once"""
-        films = asyncio.run(
-            asyncio.gather(*[
-                create_film(f"Film {i}") 
-                for i in range(5)
-            ])
-        )
-        
-        assert len(films) == 5
-        assert all(f.is_complete for f in films)
-        
-    def test_resource_usage(self):
-        """Test system doesn't exceed resource limits"""
-        with ResourceMonitor() as monitor:
-            create_film("Test resource usage")
-            
-        assert monitor.peak_memory < 8 * GB
-        assert monitor.peak_gpu_memory < 16 * GB
+#### List All Agents
+```bash
+curl http://localhost:8000/api/v1/autonomous/agents
 ```
 
-### 7. Edge Case Tests
+### 6. Watch the Autonomous Workflow
 
-Test unusual scenarios:
+When you trigger film creation, watch the logs to see agents working:
 
-```python
-class TestEdgeCases:
-    def test_vague_prompt(self):
-        """Test system handles vague user input"""
-        result = create_film("something interesting")
-        assert result.is_complete
-        assert result.has_coherent_theme()
-        
-    def test_conflicting_requirements(self):
-        """Test system handles contradictory input"""
-        result = create_film("A happy sad story")
-        assert result.is_complete
-        # Should choose one tone or blend them creatively
-        
-    def test_resource_constraints(self):
-        """Test system adapts to limited resources"""
-        with limit_gpu_memory(4 * GB):
-            result = create_film("Test scene")
-            assert result.is_complete  # Should still work
-            
-    def test_api_failures(self):
-        """Test graceful degradation when APIs fail"""
-        with mock_api_failure("openai"):
-            # Should fall back to alternative or retry
-            result = create_film("Test")
-            assert result.has_fallback_plan()
+```
+INFO: Director Agent: Developing creative vision...
+INFO: Director thinking: "Interpret this user request into a creative vision..."
+INFO: Screenwriter Agent: Writing script...
+INFO: Screenwriter thinking: "Write a 30-second screenplay for..."
+INFO: Director Agent: Reviewing script...
+INFO: Editor Agent: Assembling edit...
+INFO: Director Agent: Final approval...
 ```
 
-## 🤖 Autonomous Behavior Tests
+## What the Agents Do Autonomously
 
-### Decision Tracking
-
-```python
-class TestDecisionTracking:
-    def test_decision_logging(self):
-        """Ensure all autonomous decisions are logged"""
-        film = create_film("Test")
-        decisions = get_decision_log(film.id)
-        
-        assert len(decisions) > 0
-        for decision in decisions:
-            assert decision.has_agent()
-            assert decision.has_reasoning()
-            assert decision.has_alternatives_considered()
-            
-    def test_reproducibility(self):
-        """Test we can reproduce agent decisions with same inputs"""
-        seed = 42
-        film_a = create_film("Test", seed=seed)
-        film_b = create_film("Test", seed=seed)
-        
-        # Should make identical decisions
-        assert film_a.decision_log == film_b.decision_log
+### Stage 1: Concept Development (Director)
+```
+User: "Create inspirational video about overcoming challenges"
+  ↓
+Director Agent:
+- Analyzes user input
+- Determines tone: Inspirational, uplifting
+- Sets visual style: Cinematic, high-quality
+- Defines pacing: Dynamic with emotional beats
+- Creates creative vision document
 ```
 
-### Learning Tests
-
-```python
-class TestAgentLearning:
-    def test_feedback_integration(self):
-        """Test agents improve from feedback"""
-        # Generate initial film
-        film_v1 = create_film("Test story")
-        quality_v1 = rate_quality(film_v1)
-        
-        # Provide feedback
-        provide_feedback(film_v1, "More emotional depth needed")
-        
-        # Generate similar film
-        film_v2 = create_film("Test story")
-        quality_v2 = rate_quality(film_v2)
-        
-        assert quality_v2.emotional_depth > quality_v1.emotional_depth
-        
-    def test_pattern_recognition(self):
-        """Test agents learn from successful patterns"""
-        # Create multiple films, mark successful ones
-        for i in range(10):
-            film = create_film(f"Film {i}")
-            if is_successful(film):
-                mark_as_successful(film)
-                
-        # New film should incorporate successful patterns
-        new_film = create_film("New film")
-        patterns = extract_patterns(new_film)
-        
-        assert patterns.uses_successful_techniques()
+### Stage 2: Script Development (Screenwriter + Director)
+```
+Screenwriter Agent:
+- Writes complete screenplay
+- Breaks down into scenes
+- Adds visual notes
+- Includes timing estimates
+  ↓
+Director Agent:
+- Reviews script
+- Provides feedback
+- Approves or requests revisions
 ```
 
-## 🎬 Integration Test Scenarios
-
-### Scenario 1: Complete Film Production
-
-```python
-def test_end_to_end_production():
-    """Test complete autonomous film production"""
-    
-    # User provides only a concept
-    user_input = "A story about overcoming fear"
-    
-    # System creates film autonomously
-    film = autonomous_studio.create_film(user_input)
-    
-    # Verify all components
-    assert film.has_script
-    assert film.script.word_count > 100
-    
-    assert film.has_scenes
-    assert len(film.scenes) >= 3
-    
-    assert film.has_voiceover
-    assert film.audio.is_synchronized
-    
-    assert film.has_music
-    assert film.music.matches_mood(film.script.tone)
-    
-    assert film.has_final_edit
-    assert film.duration > 30  # At least 30 seconds
-    
-    # Verify quality
-    quality = assess_quality(film)
-    assert quality.overall > 0.75
-    assert quality.narrative_coherence > 0.8
-    assert quality.technical_quality > 0.85
+### Stage 3: Pre-Production (Director)
+```
+Director Agent:
+- Plans shot list
+- Determines camera angles
+- Sets composition requirements
+- Creates production brief
 ```
 
-### Scenario 2: Agent Disagreement Resolution
-
-```python
-def test_creative_disagreement():
-    """Test agents resolve creative differences"""
-    
-    # Force a disagreement scenario
-    concept = "Action-packed meditation scene"
-    
-    # Editor wants fast cuts (action)
-    # Director wants slow pacing (meditation)
-    
-    film = create_film(concept)
-    
-    # Should find creative middle ground
-    assert film.has_both_elements("action", "meditation")
-    assert film.editing.has_varied_pacing()
-    
-    # Check decision log shows resolution
-    decisions = film.decision_log
-    assert any("resolved conflict" in d.note for d in decisions)
+### Stage 4: Production (AI Generation)
+```
+AI Generator:
+- Generates all required shots
+- Applies style guidelines
+- Creates visual assets
+(Currently placeholder - real AI integration next)
 ```
 
-## 📊 Test Metrics
+### Stage 5: Post-Production (Editor + Sound + VFX)
+```
+Editor Agent:
+- Selects best shots
+- Determines pacing
+- Creates Edit Decision List (EDL)
+- Assembles rough cut
+  ↓
+Sound Designer: (Coming soon)
+- Adds music
+- Creates sound effects
+  ↓
+VFX Agent: (Coming soon)
+- Applies effects
+- Enhances visuals
+```
 
-### Success Criteria
+### Stage 6: Finalization (Director)
+```
+Director Agent:
+- Reviews final cut
+- Checks against creative vision
+- Approves or requests changes
+- Delivers final film
+```
 
-- **Agent Unit Tests**: 100% pass rate
-- **Integration Tests**: 95%+ pass rate
-- **Quality Tests**: 80%+ quality score
-- **Performance Tests**: Within defined limits
-- **Autonomous Decision Tests**: 90%+ appropriate decisions
+## Testing Individual Agents
 
-### Quality Benchmarks
+### Test Director Agent
+```bash
+curl -X POST http://localhost:8000/api/v1/autonomous/agents/director/task \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"type\": \"develop_vision\",
+    \"user_input\": \"A dramatic sunset scene\"
+  }"
+```
 
-```python
-QUALITY_BENCHMARKS = {
-    "script_grammar": 0.95,
-    "script_creativity": 0.70,
-    "narrative_coherence": 0.80,
-    "visual_quality": 0.85,
-    "audio_sync": 0.95,
-    "pacing_appropriateness": 0.75,
-    "agent_collaboration_efficiency": 0.80,
-    "decision_quality": 0.85
+### Test Screenwriter Agent
+```bash
+curl -X POST http://localhost:8000/api/v1/autonomous/agents/screenwriter/task \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"type\": \"write_script\",
+    \"brief\": \"Write a 15-second scene about friendship\",
+    \"duration\": 15
+  }"
+```
+
+### Test Editor Agent
+```bash
+curl -X POST http://localhost:8000/api/v1/autonomous/agents/editor/task \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"type\": \"determine_pacing\",
+    \"sequence\": \"3 shots: wide, medium, close-up\",
+    \"target_emotion\": \"tension\"
+  }"
+```
+
+## Test Scenarios
+
+### 1. Simple Inspirational Video
+```json
+{
+  "user_input": "Create an uplifting 20-second video about new beginnings",
+  "duration": 20,
+  "style": "bright and hopeful"
 }
 ```
 
-## 🚀 Running Tests
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run specific test category
-pytest tests/test_agents/test_director.py
-pytest tests/test_integration/
-pytest tests/test_autonomous/
-
-# Run with coverage
-pytest --cov=app tests/
-
-# Run performance tests
-pytest tests/test_performance/ --timeout=300
-
-# Run quality tests
-pytest tests/test_quality/ -v
+### 2. Dramatic Story
+```json
+{
+  "user_input": "A 45-second dramatic story about a person finding courage in a difficult moment",
+  "duration": 45,
+  "style": "cinematic drama"
+}
 ```
 
-## 📈 Continuous Testing
-
-### CI/CD Pipeline
-
-```yaml
-# .github/workflows/test.yml
-name: Test Autonomous Agents
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Unit Tests
-        run: pytest tests/test_agents/
-      - name: Integration Tests
-        run: pytest tests/test_integration/
-      - name: Quality Tests
-        run: pytest tests/test_quality/
+### 3. Product Showcase
+```json
+{
+  "user_input": "Create a sleek 30-second product video for a new smartphone, emphasizing innovation and design",
+  "duration": 30,
+  "style": "modern and minimal"
+}
 ```
 
-## 🔍 Monitoring in Production
+### 4. Nature Documentary Style
+```json
+{
+  "user_input": "A 60-second nature video showcasing the beauty of mountains and wildlife",
+  "duration": 60,
+  "style": "documentary"
+}
+```
 
+### 5. Music Video Concept
+```json
+{
+  "user_input": "Create a 90-second music video concept with vibrant colors and dynamic movement",
+  "duration": 90,
+  "style": "vibrant and energetic"
+}
+```
+
+## Debugging Agent Behavior
+
+### Check Agent Memory
+Agents store their decision history in memory:
 ```python
-class ProductionMonitoring:
-    def monitor_agent_performance(self):
-        """Track agent performance in production"""
-        metrics = {
-            "films_created": count_films(),
-            "average_quality": calculate_avg_quality(),
-            "decision_success_rate": track_decisions(),
-            "collaboration_efficiency": measure_collaboration(),
-            "user_satisfaction": get_user_ratings()
-        }
-        return metrics
+# In agent code:
+agent.memory  # List of all decisions and actions
 ```
 
----
+### View Agent Context
+```python
+# Current working context:
+agent.context  # Dict of current project info
+```
 
-**Testing autonomous agents is about ensuring intelligent, creative, and collaborative behavior—not just code correctness.**
+### Enable Debug Logging
+```bash
+# In .env
+AGENT_LOGGING_LEVEL=DEBUG
+LOG_LEVEL=DEBUG
+```
+
+### Watch LLM Prompts
+The agents log their "thinking" prompts:
+```
+DEBUG: Director thinking: "As an AI film director, develop creative vision for: [user input]..."
+```
+
+## Common Issues & Solutions
+
+### Issue: "OpenAI API key not found"
+**Solution:** Add your key to `.env`:
+```
+OPENAI_API_KEY=sk-your-actual-key-here
+```
+
+### Issue: Agents timing out
+**Solution:** Increase timeouts in `.env`:
+```
+AGENT_ORCHESTRATOR_TIMEOUT=7200
+WORKFLOW_STAGE_TIMEOUT_PRODUCTION=3600
+```
+
+### Issue: "Agent not found" error
+**Solution:** Check agent is enabled:
+```
+DIRECTOR_AGENT_ENABLED=true
+SCREENWRITER_AGENT_ENABLED=true
+EDITOR_AGENT_ENABLED=true
+```
+
+### Issue: Want faster testing
+**Solution:** Use GPT-3.5-Turbo:
+```
+AGENT_LLM_MODEL=gpt-3.5-turbo
+```
+
+## Next Steps
+
+### 1. Integrate Real LLMs
+Currently agents use placeholder responses. Connect actual LLMs:
+```python
+# In base_agent.py _call_llm()
+import openai
+response = await openai.ChatCompletion.acreate(...)
+```
+
+### 2. Add More Agents
+- Cinematographer Agent
+- Sound Designer Agent
+- VFX Artist Agent
+- Color Grader Agent
+
+### 3. Integrate AI Video Generation
+Connect to:
+- Stable Diffusion Video
+- Runway ML
+- Pika Labs
+- Other AI video generators
+
+### 4. Build Frontend
+Create React UI to:
+- Submit film requests
+- Monitor agent activity in real-time
+- View agent decisions
+- Manual intervention controls
+
+### 5. Add Learning
+Implement agent learning from:
+- Human feedback
+- Successful patterns
+- User preferences
+
+## Performance Metrics
+
+Track these metrics:
+- **Time per stage**: How long each workflow stage takes
+- **Iteration count**: How many revisions needed
+- **Approval rate**: How often director approves first draft
+- **User satisfaction**: Feedback on final films
+- **Agent efficiency**: Token usage, API calls
+
+## Advanced Testing
+
+### Test Multi-Agent Collaboration
+```python
+# Send message between agents
+orchestrator.send_message_between_agents(
+    from_role=AgentRole.EDITOR,
+    to_role=AgentRole.DIRECTOR,
+    message={
+        "type": "request_approval",
+        "work_type": "rough_cut",
+        "data": edit_data
+    }
+)
+```
+
+### Test Human Intervention
+```python
+# Pause for human review
+orchestrator.pause_for_review(stage="script")
+
+# Override agent decision
+orchestrator.override_decision(
+    agent=AgentRole.DIRECTOR,
+    decision="creative_vision",
+    override_value=custom_vision
+)
+```
+
+### Load Testing
+```bash
+# Test multiple concurrent film creations
+for i in {1..10}; do
+  curl -X POST http://localhost:8000/api/v1/autonomous/create-film \
+    -H "Content-Type: application/json" \
+    -d "{\"user_input\": \"Test film $i\", \"duration\": 30}" &
+done
+```
+
+## Success Criteria
+
+Your autonomous system works when:
+- ✅ Agents complete all 6 workflow stages
+- ✅ Director creates meaningful creative vision
+- ✅ Screenwriter produces coherent scripts
+- ✅ Editor makes logical pacing decisions
+- ✅ Agents collaborate (request feedback, iterate)
+- ✅ Final output aligns with user intent
+- ✅ No manual intervention required (unless configured)
+
+## Get Help
+
+- Check [AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md) for system design
+- Review agent logs for decision trail
+- Monitor `/api/v1/autonomous/status` during runs
+- Join community for agent development tips
+
+**Happy Autonomous Filmmaking! 🎬🤖**
