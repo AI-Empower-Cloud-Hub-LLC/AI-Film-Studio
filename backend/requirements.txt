@@ -5,19 +5,19 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # AI/ML Libraries
-openai==1.10.0
+openai>=1.13.3
 anthropic>=0.40.0
-crewai==0.80.0
-langchain-anthropic==0.2.0
-stability-sdk==0.8.4
-elevenlabs==0.2.27
-replicate==0.20.0
+# crewai==0.80.0  # Optional - heavy dependency
+# langchain-anthropic>=0.2.0  # Optional - for Claude
+# stability-sdk==0.8.4  # Optional - for Stability AI
+# elevenlabs>=0.2.27  # Optional - for voice synthesis
+# replicate>=0.20.0  # Optional - for video generation
 
 # Media Processing
-opencv-python==4.9.0.80
-moviepy==1.0.3
-Pillow==10.2.0
-numpy==1.26.3
+# opencv-python==4.9.0.80  # Optional - for video processing
+# moviepy==1.0.3  # Optional - for video editing
+Pillow>=10.2.0
+numpy>=1.26.3
 
 # Database
 sqlalchemy==2.0.25
@@ -44,7 +44,6 @@ email-validator==2.1.0
 
 # AI/ML Prompt Optimization
 langchain-core>=0.1.0
-langchain-anthropic>=0.1.0
 
 # WebSocket
 websockets>=12.0
