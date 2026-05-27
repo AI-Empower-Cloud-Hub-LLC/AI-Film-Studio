@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -21,6 +22,8 @@ import {
   SwatchIcon,
   SparklesIcon,
   ChartBarIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -39,6 +42,22 @@ const NAV = [
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
   { href: '/admin', label: 'Admin', icon: ChartBarIcon },
 ]
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/60 transition-colors"
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+    >
+      {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+    </button>
+  )
+}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
@@ -82,11 +101,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      {/* Agent Status */}
+      {/* Agent Status & Theme Toggle */}
       <div className="px-4 py-3 border-t border-gray-800/60">
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-          <CpuChipIcon className="h-4 w-4" />
-          <span>10 AI Agents Active</span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <CpuChipIcon className="h-4 w-4" />
+            <span>10 AI Agents Active</span>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 
