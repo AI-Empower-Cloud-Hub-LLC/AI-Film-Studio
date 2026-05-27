@@ -16,6 +16,9 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import Sidebar from '../components/Sidebar'
+import AuthGuard from '../components/AuthGuard'
+import ErrorBoundary from '../components/ErrorBoundary'
+import { SkeletonStat, SkeletonCard } from '../components/LoadingSkeleton'
 import { projectsApi } from '../../lib/api'
 import type { Project } from '../../lib/api'
 
@@ -34,7 +37,7 @@ const QUICK_ACTIONS = [
   { label: 'Voiceovers', href: '/voiceovers', icon: MicrophoneIcon, gradient: 'from-green-500 to-emerald-500' },
 ]
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,7 +56,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
       <Sidebar />
 
-      <div className="pl-64">
+      <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -72,25 +75,29 @@ export default function DashboardPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-            {STATS_CARDS.map((card, i) => (
-              <motion.div
-                key={card.key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl p-5"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2 bg-gradient-to-br ${card.gradient} rounded-lg`}>
-                    <card.icon className="h-5 w-5 text-white" />
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => <SkeletonStat key={i} />)
+            ) : (
+              STATS_CARDS.map((card, i) => (
+                <motion.div
+                  key={card.key}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl p-5"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`p-2 bg-gradient-to-br ${card.gradient} rounded-lg`}>
+                      <card.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm text-gray-400">{card.label}</span>
                   </div>
-                  <span className="text-sm text-gray-400">{card.label}</span>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {loading ? '…' : stats[card.key]}
-                </p>
-              </motion.div>
-            ))}
+                  <p className="text-2xl font-bold text-white">
+                    {stats[card.key]}
+                  </p>
+                </motion.div>
+              ))
+            )}
           </div>
 
           {/* Quick Actions */}
@@ -124,9 +131,8 @@ export default function DashboardPage() {
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-16 text-gray-400">
-                <div className="animate-spin h-6 w-6 border-2 border-purple-400 border-t-transparent rounded-full mr-3" />
-                Loading…
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : projects.length === 0 ? (
               <div className="text-center py-16">
@@ -174,5 +180,15 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <ErrorBoundary>
+        <DashboardContent />
+      </ErrorBoundary>
+    </AuthGuard>
   )
 }

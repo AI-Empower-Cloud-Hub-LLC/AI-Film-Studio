@@ -1,22 +1,6 @@
 version: '3.8'
 
 services:
-  # Ollama — Local LLM Server (FREE)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ai-film-studio-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: ai-film-studio-db
@@ -25,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-ai_film_studio}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,13 +17,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: ai-film-studio-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -47,38 +31,43 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ai-film-studio-backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-filmstudio}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ai_film_studio}
       - REDIS_URL=redis://redis:6379/0
-      - APP_ENV=development
-      - LLM_BACKEND=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
-    env_file:
-      - ./backend/.env
+      - APP_ENV=${APP_ENV:-development}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - STABILITY_API_KEY=${STABILITY_API_KEY:-}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN:-}
+      - RUNWAY_API_KEY=${RUNWAY_API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
     volumes:
-      - ./backend:/app
       - backend_media:/app/media
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
 
-  # Celery Worker
   celery-worker:
     build:
       context: ./backend
@@ -87,42 +76,47 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-filmstudio}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ai_film_studio}
       - REDIS_URL=redis://redis:6379/0
-      - LLM_BACKEND=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
-    env_file:
-      - ./backend/.env
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - STABILITY_API_KEY=${STABILITY_API_KEY:-}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN:-}
     volumes:
-      - ./backend:/app
       - backend_media:/app/media
     depends_on:
       - postgres
       - redis
-      - ollama
-    command: celery -A app.tasks.celery worker --loglevel=info
     restart: unless-stopped
+    command: celery -A app.tasks.celery worker --loglevel=info
 
-  # Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: ai-film-studio-frontend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run start
+
+  nginx:
+    image: nginx:alpine
+    container_name: ai-film-studio-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
-    command: npm run dev
+      - frontend
     restart: unless-stopped
 
 volumes:
-  ollama_data:
   postgres_data:
   redis_data:
   backend_media:
