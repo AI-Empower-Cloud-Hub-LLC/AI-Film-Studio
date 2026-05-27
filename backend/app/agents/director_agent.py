@@ -2,17 +2,17 @@
 Director Agent - Creative Vision & Planning
 """
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
+
+from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-# Used for the creative vision statement — plain prose, no JSON required.
 VISION_SYSTEM_PROMPT = """You are an award-winning film director with decades of experience.
 You craft compelling visual narratives and give each project a distinctive aesthetic identity."""
 
-# Used for scene breakdown — must return a JSON array.
 SCENE_SYSTEM_PROMPT = """You are an award-winning film director with decades of experience.
 You break stories into dynamic scenes. Always respond with valid JSON only."""
 
@@ -20,15 +20,15 @@ You break stories into dynamic scenes. Always respond with valid JSON only."""
 class DirectorAgent(BaseAgent):
     """Creates the creative vision and scene breakdown for a film."""
 
-    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
-        super().__init__(name="Director", model=model, anthropic_api_key=anthropic_api_key)
+    def __init__(self, llm: Optional[LLMService] = None):
+        super().__init__(name="Director", llm=llm)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         prompt = input_data.get("prompt", "")
         style = input_data.get("style", "cinematic")
         duration = input_data.get("duration", 30)
 
-        logger.info(f"Director processing: {prompt[:60]}...")
+        logger.info("Director processing: %s...", prompt[:60])
 
         vision = await self._create_vision(prompt, style, duration)
         scenes = await self._break_down_scenes(vision, prompt, duration)
@@ -45,7 +45,7 @@ class DirectorAgent(BaseAgent):
             "Write a concise creative vision statement (3-4 sentences) covering tone, "
             "visual aesthetic, pacing, and emotional arc. Return plain text, no JSON."
         )
-        return await self._ask_claude(user_msg, VISION_SYSTEM_PROMPT, max_tokens=512)
+        return await self._ask_llm(user_msg, VISION_SYSTEM_PROMPT, max_tokens=512)
 
     async def _break_down_scenes(self, vision: str, prompt: str, duration: int) -> list[Dict[str, Any]]:
         scene_count = max(3, duration // 10)
@@ -59,7 +59,7 @@ class DirectorAgent(BaseAgent):
             "duration (int, seconds), shot_type (wide/medium/close-up/extreme-close-up), "
             "mood (string), visual_prompt (detailed image generation prompt as string)."
         )
-        raw = await self._ask_claude(user_msg, SCENE_SYSTEM_PROMPT, max_tokens=2048)
+        raw = await self._ask_llm(user_msg, SCENE_SYSTEM_PROMPT, max_tokens=2048)
         try:
             start, end = raw.find("["), raw.rfind("]") + 1
             return json.loads(raw[start:end])

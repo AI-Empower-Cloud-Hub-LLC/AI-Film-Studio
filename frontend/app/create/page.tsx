@@ -1,127 +1,243 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-} from '@heroicons/react/24/solid'
-import {
-  SparklesIcon,
-} from '@heroicons/react/24/outline'
-import Sidebar from '../components/Sidebar'
-import AuthGuard from '../components/AuthGuard'
-import ErrorBoundary from '../components/ErrorBoundary'
-import { projectsApi } from '../../lib/api'
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const AGENTS = ['Director', 'Screenwriter', 'Cinematographer', 'SoundDesigner', 'Editor']
-
-interface AgentProgress {
-  step: number
-  total_steps: number
-  agent: string
-  status: string
-  detail: string
+interface GraphNode {
+  id: string;
+  label: string;
+  type: string;
+  description: string;
+  parallel_group?: string;
 }
 
-function AgentIcon({ status }: { status: 'pending' | 'running' | 'completed' | 'error' }) {
-  if (status === 'completed') return <CheckCircleIcon className="h-5 w-5 text-green-400" />
-  if (status === 'error') return <ExclamationCircleIcon className="h-5 w-5 text-red-400" />
-  if (status === 'running') {
-    return <div className="h-5 w-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+interface GraphEdge {
+  from: string;
+  to: string;
+  type: string;
+  label?: string;
+}
+
+interface GraphStructure {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  features: string[];
+}
+
+interface WorkflowStep {
+  agent: string;
+  status: string;
+  detail: string;
+}
+
+interface AgentStatus {
+  status: string;
+  backend: string;
+  model: string;
+  available_backends?: Record<string, boolean>;
+  voice_backend?: string;
+}
+
+interface FilmResult {
+  status: string;
+  project_id?: string;
+  message?: string;
+  data?: {
+    scene_count?: number;
+    total_duration?: number;
+    workflow_steps?: WorkflowStep[];
+    node_timings?: Record<string, number>;
+    revision_count?: number;
+  };
+}
+
+const BACKEND_LABELS: Record<string, { name: string; detail: string; color: string }> = {
+  ollama: { name: 'Ollama (Local LLM)', detail: 'Free, no API key needed', color: 'text-green-400' },
+  google: { name: 'Google AI (Gemini)', detail: 'Free tier', color: 'text-blue-400' },
+  claude: { name: 'Claude (Anthropic)', detail: 'Premium', color: 'text-purple-400' },
+};
+
+const NODE_STATUS_COLORS: Record<string, string> = {
+  pending: 'border-gray-600 bg-gray-700 text-gray-400',
+  running: 'border-indigo-400 bg-indigo-900/50 text-indigo-300 ring-2 ring-indigo-400/30',
+  completed: 'border-green-500 bg-green-900/30 text-green-300',
+  error: 'border-red-500 bg-red-900/30 text-red-300',
+  revision: 'border-yellow-500 bg-yellow-900/30 text-yellow-300',
+};
+
+const STATUS_ICONS: Record<string, string> = {
+  pending: '○',
+  running: '◉',
+  completed: '✓',
+  error: '✗',
+  revision: '↺',
+};
+
+function PipelineGraph({ graph, steps }: { graph: GraphStructure | null; steps: WorkflowStep[] }) {
+  if (!graph) return null;
+
+  const stepsByAgent: Record<string, WorkflowStep> = {};
+  for (const s of steps) {
+    stepsByAgent[s.agent] = s;
   }
-  return <div className="h-5 w-5 border-2 border-gray-600 rounded-full" />
-}
 
-function CreateFilmContent() {
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    prompt: '',
-    style: 'cinematic',
-    duration: 30,
-    model: 'claude-opus-4-6',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [agentStates, setAgentStates] = useState<Record<string, { status: string; detail: string }>>({})
-  const wsRef = useRef<WebSocket | null>(null)
+  const getNodeStatus = (node: GraphNode): string => {
+    const step = stepsByAgent[node.label];
+    return step?.status || 'pending';
+  };
 
-  const cleanupWs = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
-  }, [])
+  const orderedNodes: (GraphNode | GraphNode[])[] = [];
+  const parallelGroupAdded = new Set<string>();
 
-  useEffect(() => {
-    return cleanupWs
-  }, [cleanupWs])
-
-  const connectWebSocket = useCallback((projectId: string) => {
-    const wsUrl = API_BASE.replace(/^http/, 'ws')
-    const ws = new WebSocket(`${wsUrl}/ws/projects/${projectId}`)
-    wsRef.current = ws
-
-    ws.onmessage = (event) => {
-      const data: AgentProgress = JSON.parse(event.data)
-      if (data.agent && data.status) {
-        setAgentStates((prev) => ({
-          ...prev,
-          [data.agent]: { status: data.status, detail: data.detail || '' },
-        }))
-      }
-    }
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setAgentStates({})
-
-    try {
-      const result = await projectsApi.createFilm(
-        formData.prompt,
-        formData.style,
-        formData.duration,
-        formData.model,
-      )
-
-      if (result.project_id) {
-        connectWebSocket(result.project_id)
-      }
-
-      AGENTS.forEach((a) =>
-        setAgentStates((prev) => ({ ...prev, [a]: { status: 'completed', detail: '' } })),
-      )
-
-      setTimeout(() => {
-        router.push(`/projects/${result.project_id}`)
-      }, 1500)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create film')
-      setLoading(false)
+  const nodeOrder = ['director', 'screenwriter', 'cinematographer', 'editor', 'review'];
+  for (const id of nodeOrder) {
+    const node = graph.nodes.find(n => n.id === id);
+    if (!node) continue;
+    if (node.parallel_group && !parallelGroupAdded.has(node.parallel_group)) {
+      parallelGroupAdded.add(node.parallel_group);
+      orderedNodes.push(graph.nodes.filter(n => n.parallel_group === node.parallel_group));
+    } else if (!node.parallel_group) {
+      orderedNodes.push(node);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
-      <Sidebar />
+    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="text-lg font-bold text-indigo-400">LangGraph Pipeline</h3>
+        <div className="flex gap-1 ml-auto">
+          {graph.features.map(f => (
+            <span key={f} className="text-[10px] px-1.5 py-0.5 bg-indigo-900/50 text-indigo-300 rounded border border-indigo-700">
+              {f.replace('_', ' ')}
+            </span>
+          ))}
+        </div>
+      </div>
 
-      <div className="pl-0 lg:pl-64">
-        <div className="px-8 py-8 max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Create Film</h1>
-            <p className="text-gray-400">Transform your vision into reality with autonomous AI agents</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-6 space-y-5">
+      <div className="flex flex-col items-center gap-2">
+        {orderedNodes.map((item, idx) => (
+          <div key={idx} className="w-full">
+            {Array.isArray(item) ? (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="text-center text-xs text-gray-500 mb-1">parallel execution</div>
+                <div className="flex gap-3 justify-center">
+                  {item.map(node => (
+                    <NodeCard key={node.id} node={node} status={getNodeStatus(node)} step={stepsByAgent[node.label]} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <NodeCard node={item} status={getNodeStatus(item)} step={stepsByAgent[item.label]} />
+              </div>
+            )}
+            {idx < orderedNodes.length - 1 && (
+              <div className="flex justify-center my-1">
+                <span className="text-gray-500 text-lg">↓</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NodeCard({ node, status, step }: { node: GraphNode; status: string; step?: WorkflowStep }) {
+  return (
+    <div className={`flex-1 max-w-xs px-4 py-3 rounded-lg border transition-all duration-300 ${NODE_STATUS_COLORS[status] || NODE_STATUS_COLORS.pending}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-lg font-mono">
+          {status === 'running' ? (
+            <span className="inline-block animate-spin">◉</span>
+          ) : (
+            STATUS_ICONS[status] || STATUS_ICONS.pending
+          )}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm">{node.label}</div>
+          <div className="text-xs opacity-70 truncate">{step?.detail || node.description}</div>
+        </div>
+        {node.type === 'decision' && (
+          <span className="text-[10px] px-1 py-0.5 bg-yellow-800/50 text-yellow-300 rounded">decision</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function CreateFilm() {
+  const [formData, setFormData] = useState({
+    prompt: '',
+    style: 'cinematic',
+    duration: 30,
+  });
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<FilmResult | null>(null);
+  const [graph, setGraph] = useState<GraphStructure | null>(null);
+  const [steps, setSteps] = useState<WorkflowStep[]>([]);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/v1/autonomous/graph')
+      .then(r => r.json())
+      .then(setGraph)
+      .catch(() => {});
+    fetch('http://localhost:8000/api/v1/autonomous/agent-status')
+      .then(r => r.json())
+      .then(setAgentStatus)
+      .catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setResult(null);
+    setSteps([]);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/autonomous/create-film', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: formData.prompt,
+          style: formData.style,
+          duration: formData.duration,
+        }),
+      });
+
+      const data = await response.json();
+      setResult(data);
+      if (data.data?.workflow_steps) {
+        setSteps(data.data.workflow_steps);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setResult({ status: 'error', message: 'Failed to connect to backend' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      <header className="bg-gray-800 border-b border-gray-700 p-6">
+        <div className="container mx-auto">
+          <Link href="/" className="text-indigo-400 hover:text-indigo-300 mb-2 inline-block">
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-bold">🎬 Create Your Film</h1>
+          <p className="text-gray-400 mt-2">Transform your vision into reality with autonomous AI agents</p>
+        </div>
+      </header>
+
+      <main className="container mx-auto p-6 max-w-4xl">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Form column */}
+          <div className="lg:col-span-3">
+            <form onSubmit={handleSubmit} className="bg-gray-800 p-8 rounded-lg border border-gray-700">
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
                   Film Concept <span className="text-red-400">*</span>
                 </label>
                 <textarea
@@ -131,18 +247,18 @@ function CreateFilmContent() {
                   rows={4}
                   required
                   disabled={loading}
-                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none text-white placeholder-gray-500 transition-colors"
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Visual Style</label>
+                  <label className="block text-sm font-medium mb-2">Visual Style</label>
                   <select
                     value={formData.style}
                     onChange={(e) => setFormData({ ...formData, style: e.target.value })}
                     disabled={loading}
-                    className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded focus:border-indigo-500 focus:outline-none"
                   >
                     <option value="cinematic">Cinematic</option>
                     <option value="documentary">Documentary</option>
@@ -154,119 +270,102 @@ function CreateFilmContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Duration (seconds)</label>
+                  <label className="block text-sm font-medium mb-2">Duration (seconds)</label>
                   <input
                     type="number"
                     value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
+                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                     min="10"
                     max="300"
                     step="10"
                     disabled={loading}
-                    className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">AI Model</label>
-                <select
-                  value={formData.model}
-                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                  disabled={loading}
-                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
-                >
-                  <option value="claude-opus-4-6">Claude Opus 4.6 — Most Powerful</option>
-                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — Balanced</option>
-                  <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
-                  <option value="gpt-4">GPT-4 (OpenAI)</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !formData.prompt || formData.prompt.length < 10}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-700 disabled:to-gray-700 text-white font-bold py-4 rounded-xl text-lg transition-all hover:shadow-lg hover:shadow-purple-500/30 disabled:cursor-not-allowed"
-            >
-              <SparklesIcon className="h-6 w-6" />
-              {loading ? 'Creating Film...' : 'Create Film'}
-            </button>
-          </form>
-
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="mt-6 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 flex items-start gap-3"
-              >
-                <ExclamationCircleIcon className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Film creation failed</p>
-                  <p className="text-sm mt-1 text-red-300">{error}</p>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">AI Backend</label>
+                <div className="w-full p-3 bg-gray-700 border border-gray-600 rounded">
+                  {agentStatus ? (
+                    <div>
+                      <span className={BACKEND_LABELS[agentStatus.backend]?.color || 'text-gray-300'}>
+                        {BACKEND_LABELS[agentStatus.backend]?.name || agentStatus.backend}
+                      </span>
+                      <span className="text-gray-500 ml-2">— {BACKEND_LABELS[agentStatus.backend]?.detail || ''}</span>
+                      {agentStatus.voice_backend === 'elevenlabs' && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 bg-purple-900/50 text-purple-300 rounded border border-purple-700">
+                          ElevenLabs Voice
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">Loading...</span>
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 bg-gray-800/60 border border-gray-700/50 rounded-xl p-6"
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Production Pipeline</h3>
-              <div className="space-y-3">
-                {AGENTS.map((agent, i) => {
-                  const state = agentStates[agent]
-                  const status = (state?.status || (i === 0 && loading ? 'running' : 'pending')) as 'pending' | 'running' | 'completed' | 'error'
-                  return (
-                    <motion.div
-                      key={agent}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                        status === 'running'
-                          ? 'bg-purple-500/10 border border-purple-500/20'
-                          : status === 'completed'
-                          ? 'bg-green-500/5'
-                          : ''
-                      }`}
-                    >
-                      <AgentIcon status={status} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${
-                          status === 'completed' ? 'text-green-400' :
-                          status === 'running' ? 'text-purple-400' :
-                          'text-gray-500'
-                        }`}>
-                          Step {i + 1}: {agent}
-                        </p>
-                        {state?.detail && (
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">{state.detail}</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )
-                })}
+                <p className="text-xs text-gray-500 mt-1">
+                  {agentStatus ? (
+                    <>Model: {agentStatus.model}
+                    {agentStatus.available_backends && (
+                      <> · Available: {Object.entries(agentStatus.available_backends).filter(([, v]) => v).map(([k]) => k).join(', ')}</>
+                    )}</>
+                  ) : (
+                    'Connecting to backend...'
+                  )}
+                </p>
               </div>
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
-export default function CreateFilmPage() {
-  return (
-    <AuthGuard>
-      <ErrorBoundary>
-        <CreateFilmContent />
-      </ErrorBoundary>
-    </AuthGuard>
-  )
+              <button
+                type="submit"
+                disabled={loading || !formData.prompt}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 text-white font-bold py-4 rounded-lg text-lg transition"
+              >
+                {loading ? '🎬 Creating Film...' : '🚀 Create Film'}
+              </button>
+            </form>
+
+            {/* Result section */}
+            {result && result.status === 'success' && (
+              <div className="mt-6 bg-gray-800 p-6 rounded-lg border border-green-500">
+                <h3 className="text-xl font-bold mb-4 text-green-400">Film Created Successfully!</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="text-gray-400">Project ID:</span> {result.project_id}</p>
+                  <p><span className="text-gray-400">Scenes:</span> {result.data?.scene_count}</p>
+                  <p><span className="text-gray-400">Duration:</span> {result.data?.total_duration}s</p>
+                  {result.data?.revision_count ? (
+                    <p><span className="text-gray-400">Revisions:</span> {result.data.revision_count}</p>
+                  ) : null}
+                  {result.data?.node_timings && (
+                    <div className="mt-3 pt-3 border-t border-gray-700">
+                      <p className="text-gray-400 mb-1">Pipeline Timings:</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {Object.entries(result.data.node_timings).map(([node, time]) => (
+                          <div key={node} className="flex justify-between text-xs">
+                            <span className="text-gray-500">{node}</span>
+                            <span className="text-indigo-300">{time}s</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {result && result.status === 'error' && (
+              <div className="mt-6 bg-gray-800 p-6 rounded-lg border border-red-500">
+                <h3 className="text-xl font-bold mb-2 text-red-400">Pipeline Error</h3>
+                <p className="text-sm text-gray-300">{result.message || 'An error occurred during film creation'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Pipeline visualization column */}
+          <div className="lg:col-span-2">
+            <PipelineGraph graph={graph} steps={steps} />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
