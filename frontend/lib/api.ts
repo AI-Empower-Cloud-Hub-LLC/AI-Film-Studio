@@ -72,115 +72,6 @@ export interface Project {
   created_at: string
 }
 
-export interface CastCharacter {
-  name: string
-  role: string
-  description: string
-  physical_description: string
-  age_range: string
-  gender: string
-  wardrobe: string
-  image_prompt: string
-  estimated_budget: string
-  notes: string
-}
-
-export interface CastData {
-  characters: CastCharacter[]
-  total_characters: number
-  casting_sheet: {
-    total_characters: number
-    leads: number
-    supporting: number
-    extras: number
-    estimated_total_budget: string
-  }
-}
-
-export interface LocationData {
-  locations: {
-    scene_number: number
-    location_name: string
-    type: string
-    geographic_description: string
-    visual_description: string
-    image_prompt: string
-    city_country: string
-    permit_required: boolean
-    estimated_cost: string
-    logistics: string
-    alternatives: string[]
-    weather_considerations: string
-  }[]
-  total_locations: number
-  logistics_summary: {
-    total_locations: number
-    interior_count: number
-    exterior_count: number
-    permits_needed: number
-    estimated_total_cost: string
-  }
-}
-
-export interface VFXData {
-  vfx_shots: {
-    scene_number: number
-    vfx_needed: boolean
-    techniques: string[]
-    description: string
-    complexity: string
-    estimated_cost: string
-    render_time_estimate: string
-    software_recommended: string[]
-    notes: string
-  }[]
-  total_vfx_shots: number
-  vfx_summary: {
-    total_scenes: number
-    scenes_with_vfx: number
-    complexity_breakdown: Record<string, number>
-    estimated_total_cost: string
-  }
-}
-
-export interface MoodBoardData {
-  mood_images: {
-    id: number
-    title: string
-    category: string
-    description: string
-    image_prompt: string
-    color_hex_codes: string[]
-    reference_notes: string
-  }[]
-  style_guide: {
-    primary_colors: string[]
-    accent_colors: string[]
-    typography_style: string
-    lighting_approach: string
-    texture_keywords: string[]
-    composition_rules: string[]
-    reference_films: string[]
-    overall_tone: string
-  }
-  total_images: number
-}
-
-export interface RefinedScreenplay {
-  refined_scenes: {
-    scene_number: number
-    slug_line: string
-    action_lines: string
-    dialogue: { character: string; parenthetical?: string; line: string }[]
-    camera_directions: string[]
-    transitions: string
-    production_notes: string[]
-    polished_narration: string
-  }[]
-  total_scenes: number
-  format: string
-}
-
 export interface ProjectDetail {
   id: string
   title: string
@@ -193,11 +84,6 @@ export interface ProjectDetail {
   created_at: string
   scenes: Scene[]
   script: Scene[]
-  refined_screenplay?: RefinedScreenplay
-  cast?: CastData
-  locations?: LocationData
-  vfx_plan?: VFXData
-  mood_board?: MoodBoardData
 }
 
 export interface Scene {
@@ -225,6 +111,49 @@ export const projectsApi = {
       body: JSON.stringify({ prompt, style, duration, model }),
     })
   },
+}
+
+export type ProjectSummary = Project
+
+export const api = {
+  listProjects() {
+    return projectsApi.list()
+  },
+  getProject(id: string) {
+    return projectsApi.get(id)
+  },
+}
+
+export const mediaApi = {
+  generateImage(prompt: string, category = 'storyboard') {
+    return apiFetch<{ status: string; path?: string; url?: string; backend: string }>('/media/generate-image', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, category }),
+    })
+  },
+  generateTTS(text: string, voice = 'neutral', pace = 'normal') {
+    return apiFetch<{ status: string; path?: string; backend: string; size_bytes?: number }>('/media/generate-tts', {
+      method: 'POST',
+      body: JSON.stringify({ text, voice, pace }),
+    })
+  },
+  status() {
+    return apiFetch<Record<string, { configured: boolean; backend?: string }>>('/media/status')
+  },
+}
+
+export const exportsApi = {
+  jsonUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/json/${projectId}`
+  },
+  pdfUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/pdf/${projectId}`
+  },
+}
+
+export function mediaUrl(path: string): string {
+  if (path.startsWith('http')) return path
+  return `${API_BASE}/${path}`
 }
 
 export const promptsApi = {

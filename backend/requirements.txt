@@ -1,48 +1,61 @@
 # FastAPI Framework
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-pydantic>=2.7.4
-pydantic-settings>=2.1.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
 
-# LLM Backends (FREE — no API keys required for Ollama)
-aiohttp==3.13.3
+# AI/ML Libraries
+openai>=1.13.3
+anthropic>=0.40.0
+# crewai==0.80.0  # Optional - heavy dependency
+# langchain-anthropic>=0.2.0  # Optional - for Claude
+# stability-sdk==0.8.4  # Optional - for Stability AI
+# elevenlabs>=0.2.27  # Optional - for voice synthesis
+# replicate>=0.20.0  # Optional - for video generation
 
-# LangGraph for agent orchestration
-langgraph>=0.2.0
-langchain-core>=0.3.0
-
-# Media Processing (open-source)
+# Media Processing
+# opencv-python==4.9.0.80  # Optional - for video processing
+# moviepy==1.0.3  # Optional - for video editing
 Pillow>=10.2.0
 numpy>=1.26.3
 
 # Database
-sqlalchemy>=2.0.25
-alembic>=1.13.1
-psycopg2-binary>=2.9.9
-motor>=3.3.0
+sqlalchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
 
 # Storage
-boto3>=1.34.34
-azure-storage-blob>=12.19.0
+boto3==1.34.34
+azure-storage-blob==12.19.0
 
 # Task Queue
-celery>=5.3.6
-redis>=5.0.1
+celery==5.3.6
+redis==5.0.1
 
 # Utilities
-python-multipart>=0.0.6
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.1
-python-dotenv>=1.0.0
-requests>=2.31.0
-email-validator>=2.1.0
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-dotenv==1.0.0
+requests==2.31.0
+aiohttp==3.13.3
+email-validator==2.1.0
+
+# Text-to-Speech
+gTTS>=2.5.0
+
+# PDF Generation
+reportlab>=4.0
+
+# AI/ML Prompt Optimization
+langchain-core>=0.1.0
 
 # WebSocket
 websockets>=12.0
 
 # Testing
-pytest>=7.4.4
-pytest-asyncio>=0.23.3
-pytest-cov>=4.1.0
-httpx>=0.26.0
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0

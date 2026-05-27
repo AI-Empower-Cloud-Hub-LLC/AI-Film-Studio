@@ -43,17 +43,34 @@ class AudioGenerator:
         voice_type: str,
         pace: str,
     ) -> Dict[str, Any]:
-        logger.info("Voiceover request (local): %d chars, voice=%s", len(text), voice_type)
+        logger.info("Voiceover request (gTTS): %d chars, voice=%s", len(text), voice_type)
         os.makedirs("media/audio", exist_ok=True)
-        placeholder = f"media/audio/voiceover_{abs(hash(text)) % 10000}.txt"
-        with open(placeholder, "w") as f:
-            f.write(f"Voiceover text:\n{text}\nVoice: {voice_type}, Pace: {pace}\n")
-        return {
-            "status": "placeholder",
-            "backend": "local",
-            "path": placeholder,
-            "note": "Connect a local Coqui TTS server for real voiceover generation.",
-        }
+        audio_path = f"media/audio/voiceover_{abs(hash(text)) % 10000}.mp3"
+        try:
+            from gtts import gTTS
+            slow = pace == "slow"
+            lang_map = {"neutral": "en", "deep-male": "en", "warm-female": "en"}
+            lang = lang_map.get(voice_type, "en")
+            tts = gTTS(text=text, lang=lang, slow=slow)
+            tts.save(audio_path)
+            file_size = os.path.getsize(audio_path)
+            return {
+                "status": "completed",
+                "backend": "gtts",
+                "path": audio_path,
+                "size_bytes": file_size,
+            }
+        except Exception as exc:
+            logger.warning("gTTS failed: %s — writing placeholder", exc)
+            placeholder = audio_path.replace(".mp3", ".txt")
+            with open(placeholder, "w") as f:
+                f.write(f"Voiceover text:\n{text}\nVoice: {voice_type}, Pace: {pace}\n")
+            return {
+                "status": "placeholder",
+                "backend": "local",
+                "path": placeholder,
+                "note": str(exc),
+            }
 
     async def _elevenlabs_generate(
         self,

@@ -1,15 +1,18 @@
 """
 Image Generation Service — generates reference images for cast, locations, mood boards,
-and storyboard frames using free/local methods with Runway API fallback.
+and storyboard frames.
 
-Uses Runway's image generation endpoint if RUNWAY_API_KEY is set,
-otherwise generates placeholder SVG images locally.
+Priority: Gemini (Imagen) → Runway → local SVG placeholder.
 """
+import base64
 import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+
+import aiohttp
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +21,19 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class ImageGenerator:
-    """Generates reference images — local placeholder or Runway API."""
+    """Generates reference images — Gemini Imagen, Runway, or local placeholder."""
 
     def __init__(self):
+        self.google_api_key = getattr(settings, "GOOGLE_API_KEY", "")
         self.runway_api_key = os.getenv("RUNWAY_API_KEY", "")
-        self.is_configured = bool(self.runway_api_key)
+
+    @property
+    def active_backend(self) -> str:
+        if self.google_api_key:
+            return "gemini"
+        if self.runway_api_key:
+            return "runway"
+        return "local"
 
     async def generate(
         self,
@@ -31,12 +42,61 @@ class ImageGenerator:
         width: int = 512,
         height: int = 512,
     ) -> dict:
-        """Generate an image from a text prompt.
+        """Generate an image from a text prompt."""
+        if self.google_api_key:
+            result = await self._gemini_generate(prompt, category, width, height)
+            if result["status"] != "placeholder":
+                return result
+        if self.runway_api_key:
+            result = await self._runway_generate(prompt, category, width, height)
+            if result["status"] != "placeholder":
+                return result
+        return self._local_placeholder(prompt, category, width, height)
 
-        Returns dict with keys: status, path, prompt, category, backend.
-        """
-        if self.is_configured:
-            return await self._runway_generate(prompt, category, width, height)
+    async def _gemini_generate(
+        self, prompt: str, category: str, width: int, height: int
+    ) -> dict:
+        """Use Gemini's image generation (Imagen 3) via Google AI API."""
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/"
+            "models/gemini-2.0-flash-exp:generateContent"
+            f"?key={self.google_api_key}"
+        )
+        payload = {
+            "contents": [{"parts": [{"text": f"Generate an image: {prompt}"}]}],
+            "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, json=payload, timeout=aiohttp.ClientTimeout(total=60)
+                ) as resp:
+                    if resp.status != 200:
+                        body = await resp.text()
+                        logger.warning("Gemini image gen error %s: %s", resp.status, body[:200])
+                        return self._local_placeholder(prompt, category, width, height)
+                    data = await resp.json()
+                    candidates = data.get("candidates", [])
+                    for candidate in candidates:
+                        parts = candidate.get("content", {}).get("parts", [])
+                        for part in parts:
+                            if "inlineData" in part:
+                                img_data = part["inlineData"]["data"]
+                                mime = part["inlineData"].get("mimeType", "image/png")
+                                ext = "png" if "png" in mime else "jpg"
+                                prompt_hash = hashlib.md5(prompt.encode()).hexdigest()[:10]
+                                filename = f"{category}_{prompt_hash}.{ext}"
+                                filepath = MEDIA_DIR / filename
+                                filepath.write_bytes(base64.b64decode(img_data))
+                                return {
+                                    "status": "generated",
+                                    "path": str(filepath),
+                                    "prompt": prompt,
+                                    "category": category,
+                                    "backend": "gemini",
+                                }
+        except Exception as exc:
+            logger.warning("Gemini image generation failed: %s", exc)
         return self._local_placeholder(prompt, category, width, height)
 
     def _local_placeholder(
@@ -69,7 +129,7 @@ class ImageGenerator:
     async def _runway_generate(
         self, prompt: str, category: str, width: int, height: int
     ) -> dict:
-        """Use Runway API for image generation (future — currently falls back)."""
+        """Use Runway API for image generation."""
         try:
             import httpx
             async with httpx.AsyncClient(timeout=60) as client:

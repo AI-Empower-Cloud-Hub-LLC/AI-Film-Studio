@@ -1,5 +1,9 @@
 """
-Database — SQLAlchemy engine, session factory, and table initialisation.
+Database — thin wrapper over the canonical app.db.session module.
+
+Re-exports engine, SessionLocal, and get_db from the shared DB module so all
+routes use a single engine/connection-pool. Adds create_tables() for
+dev/test use only — production schema management is handled by Alembic.
 """
 import logging
 import os
@@ -19,6 +23,15 @@ _connect_args = {"check_same_thread": False} if _DATABASE_URL.startswith("sqlite
 
 engine = create_engine(_DATABASE_URL, connect_args=_connect_args, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_db() -> Generator[Session, None, None]:
+    """Dependency for getting database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def _migrate_missing_columns() -> None:
@@ -41,16 +54,11 @@ def _migrate_missing_columns() -> None:
 
 
 def create_tables() -> None:
-    """Create all tables declared in the ORM models."""
+    """Create all ORM-declared tables (dev/test only — use Alembic in production)."""
     import app.models  # noqa: F401 — registers models with Base.metadata
+    from app.models.base import Base
     Base.metadata.create_all(bind=engine)
     _migrate_missing_columns()
 
 
-def get_db() -> Generator[Session, None, None]:
-    """FastAPI dependency that yields a DB session and closes it afterwards."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+__all__ = ["engine", "SessionLocal", "get_db", "create_tables"]

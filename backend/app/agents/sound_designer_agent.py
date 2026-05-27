@@ -2,10 +2,8 @@
 Sound Designer Agent - Audio Landscape Planning
 """
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import logging
-
-from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -19,15 +17,15 @@ Always respond with valid JSON only."""
 class SoundDesignerAgent(BaseAgent):
     """Plans the complete audio landscape: music, SFX, and voiceover guidance."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
-        super().__init__(name="SoundDesigner", llm=llm)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
+        super().__init__(name="SoundDesigner", model=model, anthropic_api_key=anthropic_api_key)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         script_scenes = input_data.get("script_scenes", [])
         style = input_data.get("style", "cinematic")
         vision = input_data.get("vision", "")
 
-        logger.info("Sound Designer planning audio for %d scenes...", len(script_scenes))
+        logger.info(f"Sound Designer planning audio for {len(script_scenes)} scenes...")
 
         audio_plans = []
         for scene in script_scenes:
@@ -54,14 +52,14 @@ class SoundDesignerAgent(BaseAgent):
             "- voiceover_tone (string: calm/dramatic/excited/mysterious/warm)\n"
             "- voiceover_pace (string: slow/normal/fast)\n"
             "- mixing_notes (string: brief audio mixing guidance)\n"
-            "- voice_type (string: suggested voice e.g. 'deep-male' / 'warm-female' / 'neutral')"
+            "- elevenlabs_voice_id (string: suggested voice type e.g. 'deep-male' / 'warm-female' / 'neutral')"
         )
-        raw = await self._ask_llm(user_msg, SYSTEM_PROMPT, max_tokens=768)
+        raw = await self._ask_claude(user_msg, SYSTEM_PROMPT, max_tokens=768)
         try:
             start, end = raw.find("{"), raw.rfind("}") + 1
             return json.loads(raw[start:end])
         except Exception:
-            logger.warning("SoundDesigner: failed to parse scene %s JSON", scene.get("scene_number"))
+            logger.warning(f"SoundDesigner: failed to parse scene {scene.get('scene_number')} JSON")
             return {
                 "scene_number": scene.get("scene_number", 1),
                 "music_genre": "cinematic orchestral",
@@ -71,5 +69,5 @@ class SoundDesignerAgent(BaseAgent):
                 "voiceover_tone": "calm",
                 "voiceover_pace": "normal",
                 "mixing_notes": "Music at 30%, SFX at 20%, voiceover at 100%",
-                "voice_type": "neutral",
+                "elevenlabs_voice_id": "neutral",
             }

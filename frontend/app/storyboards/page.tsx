@@ -4,16 +4,21 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   PhotoIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
 import Sidebar from '../components/Sidebar'
-import { projectsApi } from '../../lib/api'
+import AuthGuard from '../components/AuthGuard'
+import ErrorBoundary from '../components/ErrorBoundary'
+import { projectsApi, mediaApi, mediaUrl } from '../../lib/api'
 import type { Project, Scene } from '../../lib/api'
 
-export default function StoryboardsPage() {
+function StoryboardsContent() {
   const [projects, setProjects] = useState<Project[]>([])
   const [frames, setFrames] = useState<Scene[]>([])
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generatingFrame, setGeneratingFrame] = useState<number | null>(null)
+  const [frameImages, setFrameImages] = useState<Record<number, string>>({})
 
   useEffect(() => {
     projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
@@ -21,6 +26,7 @@ export default function StoryboardsPage() {
 
   const loadFrames = async (id: string) => {
     setSelectedProject(id)
+    setFrameImages({})
     try {
       const detail = await projectsApi.get(id)
       setFrames(detail.scenes)
@@ -29,14 +35,49 @@ export default function StoryboardsPage() {
     }
   }
 
+  const generateImage = async (scene: Scene) => {
+    const prompt = scene.visual_prompt || scene.description
+    if (!prompt) return
+    setGeneratingFrame(scene.scene_number)
+    try {
+      const result = await mediaApi.generateImage(prompt, 'storyboard')
+      const url = result.url || (result.path ? mediaUrl(result.path) : null)
+      if (url) {
+        setFrameImages(prev => ({ ...prev, [scene.scene_number]: url }))
+      }
+    } catch (err) {
+      console.error('Image gen failed:', err)
+    } finally {
+      setGeneratingFrame(null)
+    }
+  }
+
+  const generateAll = async () => {
+    for (const frame of frames) {
+      await generateImage(frame)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
       <Sidebar />
-      <div className="pl-64">
+      <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Storyboards</h1>
-            <p className="text-gray-400">Visual planning frames derived from scene breakdowns</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">Storyboards</h1>
+              <p className="text-gray-400">Visual planning frames derived from scene breakdowns</p>
+            </div>
+            {frames.length > 0 && (
+              <button
+                onClick={generateAll}
+                disabled={generatingFrame !== null}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                <SparklesIcon className="h-4 w-4" />
+                Generate All Images
+              </button>
+            )}
           </div>
 
           {/* Project selector */}
@@ -59,7 +100,7 @@ export default function StoryboardsPage() {
           {loading ? (
             <div className="flex items-center justify-center py-20 text-gray-400">
               <div className="animate-spin h-6 w-6 border-2 border-purple-400 border-t-transparent rounded-full mr-3" />
-              Loading…
+              Loading...
             </div>
           ) : !selectedProject ? (
             <div className="text-center py-20">
@@ -80,9 +121,30 @@ export default function StoryboardsPage() {
                   transition={{ delay: i * 0.06 }}
                   className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
                 >
-                  {/* Placeholder frame visual */}
-                  <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative">
-                    <PhotoIcon className="h-12 w-12 text-gray-600" />
+                  {/* Frame visual */}
+                  <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative overflow-hidden">
+                    {frameImages[frame.scene_number] ? (
+                      <img
+                        src={frameImages[frame.scene_number]}
+                        alt={`Frame ${frame.scene_number}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => generateImage(frame)}
+                        disabled={generatingFrame !== null}
+                        className="flex flex-col items-center gap-2 text-gray-500 hover:text-purple-400 transition-colors"
+                      >
+                        {generatingFrame === frame.scene_number ? (
+                          <div className="animate-spin h-8 w-8 border-2 border-purple-400 border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <SparklesIcon className="h-8 w-8" />
+                            <span className="text-xs">Generate Image</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                     <div className="absolute top-3 left-3 px-2 py-0.5 bg-black/60 text-white text-xs font-medium rounded">
                       Frame {frame.scene_number}
                     </div>
@@ -110,5 +172,15 @@ export default function StoryboardsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function StoryboardsPage() {
+  return (
+    <AuthGuard>
+      <ErrorBoundary>
+        <StoryboardsContent />
+      </ErrorBoundary>
+    </AuthGuard>
   )
 }

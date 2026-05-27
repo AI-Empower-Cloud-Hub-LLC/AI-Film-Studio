@@ -2,10 +2,8 @@
 Screenwriter Agent - Script & Dialogue Generation
 """
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List
 import logging
-
-from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -18,14 +16,14 @@ Always respond with valid JSON only."""
 class ScreenwriterAgent(BaseAgent):
     """Writes detailed scripts with dialogue and narration for each scene."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
-        super().__init__(name="Screenwriter", llm=llm)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
+        super().__init__(name="Screenwriter", model=model, anthropic_api_key=anthropic_api_key)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         vision = input_data.get("vision", "")
         scenes = input_data.get("scenes", [])
 
-        logger.info("Screenwriter scripting %d scenes...", len(scenes))
+        logger.info(f"Screenwriter scripting {len(scenes)} scenes...")
 
         script_scenes = []
         for scene in scenes:
@@ -50,12 +48,12 @@ class ScreenwriterAgent(BaseAgent):
             "- audio_cues (array of strings)\n"
             "- duration (int, seconds)"
         )
-        raw = await self._ask_llm(user_msg, SYSTEM_PROMPT, max_tokens=1024)
+        raw = await self._ask_claude(user_msg, SYSTEM_PROMPT, max_tokens=1024)
         try:
             start, end = raw.find("{"), raw.rfind("}") + 1
             return json.loads(raw[start:end])
         except Exception:
-            logger.warning("Screenwriter: failed to parse scene %s JSON", scene.get("scene_number"))
+            logger.warning(f"Screenwriter: failed to parse scene {scene.get('scene_number')} JSON")
             return {
                 "scene_number": scene.get("scene_number", 1),
                 "description": scene.get("description", ""),

@@ -64,8 +64,8 @@ export default function Home() {
               AI Film Studio
             </h1>
           </div>
-          <Link 
-            href="/projects" 
+          <Link
+            href="/create"
             className="group relative px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg overflow-hidden transition-all hover:shadow-lg hover:shadow-purple-500/50"
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -105,8 +105,8 @@ export default function Home() {
             workflow with cutting-edge AI technology.
           </p>
           
-          <Link 
-            href="/projects/new" 
+          <Link
+            href="/create"
             className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white text-lg font-semibold rounded-xl overflow-hidden transition-all hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-105"
           >
             <span className="relative z-10">Start Your First Project</span>

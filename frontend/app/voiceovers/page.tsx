@@ -1,21 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   MicrophoneIcon,
   MusicalNoteIcon,
   SpeakerWaveIcon,
+  PlayIcon,
+  PauseIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
 import Sidebar from '../components/Sidebar'
-import { projectsApi } from '../../lib/api'
+import AuthGuard from '../components/AuthGuard'
+import ErrorBoundary from '../components/ErrorBoundary'
+import { projectsApi, mediaApi, mediaUrl } from '../../lib/api'
 import type { Project, Scene } from '../../lib/api'
 
-export default function VoiceoversPage() {
+function VoiceoversContent() {
   const [projects, setProjects] = useState<Project[]>([])
   const [narrations, setNarrations] = useState<Scene[]>([])
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generatingScene, setGeneratingScene] = useState<number | null>(null)
+  const [audioUrls, setAudioUrls] = useState<Record<number, string>>({})
+  const [playingScene, setPlayingScene] = useState<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
@@ -23,6 +32,8 @@ export default function VoiceoversPage() {
 
   const loadNarrations = async (id: string) => {
     setSelectedProject(id)
+    setAudioUrls({})
+    setPlayingScene(null)
     try {
       const detail = await projectsApi.get(id)
       setNarrations(detail.scenes.filter((s) => s.narration))
@@ -31,14 +42,63 @@ export default function VoiceoversPage() {
     }
   }
 
+  const generateVoiceover = async (scene: Scene) => {
+    if (!scene.narration) return
+    setGeneratingScene(scene.scene_number)
+    try {
+      const result = await mediaApi.generateTTS(scene.narration)
+      if (result.status === 'completed' && result.path) {
+        setAudioUrls(prev => ({ ...prev, [scene.scene_number]: mediaUrl(result.path!) }))
+      }
+    } catch (err) {
+      console.error('TTS failed:', err)
+    } finally {
+      setGeneratingScene(null)
+    }
+  }
+
+  const generateAll = async () => {
+    for (const scene of narrations) {
+      await generateVoiceover(scene)
+    }
+  }
+
+  const togglePlay = (sceneNumber: number, url: string) => {
+    if (playingScene === sceneNumber) {
+      audioRef.current?.pause()
+      setPlayingScene(null)
+      return
+    }
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+    const audio = new Audio(url)
+    audio.onended = () => setPlayingScene(null)
+    audio.play()
+    audioRef.current = audio
+    setPlayingScene(sceneNumber)
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
       <Sidebar />
-      <div className="pl-64">
+      <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Voiceovers</h1>
-            <p className="text-gray-400">AI-generated narration and dialogue audio tracks</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">Voiceovers</h1>
+              <p className="text-gray-400">AI-generated narration and dialogue audio tracks</p>
+            </div>
+            {narrations.length > 0 && (
+              <button
+                onClick={generateAll}
+                disabled={generatingScene !== null}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                <SparklesIcon className="h-4 w-4" />
+                Generate All Voiceovers
+              </button>
+            )}
           </div>
 
           {/* Project selector */}
@@ -61,7 +121,7 @@ export default function VoiceoversPage() {
           {loading ? (
             <div className="flex items-center justify-center py-20 text-gray-400">
               <div className="animate-spin h-6 w-6 border-2 border-purple-400 border-t-transparent rounded-full mr-3" />
-              Loading…
+              Loading...
             </div>
           ) : !selectedProject ? (
             <div className="text-center py-20">
@@ -94,6 +154,34 @@ export default function VoiceoversPage() {
                       </div>
                       <p className="text-sm text-gray-300 mb-3">{scene.narration}</p>
 
+                      {/* Audio controls */}
+                      <div className="flex items-center gap-3 mb-3">
+                        {audioUrls[scene.scene_number] ? (
+                          <button
+                            onClick={() => togglePlay(scene.scene_number, audioUrls[scene.scene_number])}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600/20 border border-green-500/30 rounded-lg text-green-400 text-xs font-medium hover:bg-green-600/30 transition-colors"
+                          >
+                            {playingScene === scene.scene_number ? (
+                              <><PauseIcon className="h-4 w-4" /> Pause</>
+                            ) : (
+                              <><PlayIcon className="h-4 w-4" /> Play Voiceover</>
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => generateVoiceover(scene)}
+                            disabled={generatingScene !== null}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-400 text-xs font-medium hover:bg-purple-600/30 disabled:opacity-50 transition-colors"
+                          >
+                            {generatingScene === scene.scene_number ? (
+                              <><div className="animate-spin h-3 w-3 border-2 border-purple-400 border-t-transparent rounded-full" /> Generating...</>
+                            ) : (
+                              <><SparklesIcon className="h-4 w-4" /> Generate Voiceover</>
+                            )}
+                          </button>
+                        )}
+                      </div>
+
                       {scene.audio_cues && scene.audio_cues.length > 0 && (
                         <div className="flex items-center gap-2 flex-wrap">
                           <MusicalNoteIcon className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
@@ -113,5 +201,15 @@ export default function VoiceoversPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VoiceoversPage() {
+  return (
+    <AuthGuard>
+      <ErrorBoundary>
+        <VoiceoversContent />
+      </ErrorBoundary>
+    </AuthGuard>
   )
 }
