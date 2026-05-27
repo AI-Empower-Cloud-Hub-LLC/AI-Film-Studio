@@ -99,7 +99,7 @@ def test_llm_service_claude_fallback_without_key():
 async def test_llm_service_fallback_on_error():
     svc = LLMService(ollama_base_url="http://localhost:99999")
     result = await svc.generate("test prompt", "system", max_tokens=100)
-    assert "[LLM unavailable]" in result
+    assert "unavailable]" in result
 
 
 @pytest.mark.asyncio

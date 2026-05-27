@@ -1,12 +1,14 @@
 """
-Autonomous Film Creation API Routes — free-only LLM backends.
+Autonomous Film Creation API Routes — multi-backend LLM + media generation.
 """
+import asyncio
 import json
 import uuid
 import logging
 from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
@@ -58,6 +60,8 @@ def _persist_project(
     script_out = result.get("script", {})
     scenes_raw: List[Dict] = director_out.get("scenes", [])
     script_scenes: List[Dict] = script_out.get("script_scenes", [])
+    generated_media = result.get("generated_media", {})
+    media_scenes: List[Dict] = generated_media.get("scenes", [])
 
     project = Project(
         id=project_id or str(uuid.uuid4()),
@@ -72,9 +76,13 @@ def _persist_project(
     db.flush()
 
     script_lookup = {s.get("scene_number"): s for s in script_scenes}
+    media_lookup = {m.get("scene_number"): m for m in media_scenes}
     for scene_data in scenes_raw:
         sn = scene_data.get("scene_number", 0)
         script_scene = script_lookup.get(sn, {})
+        media_scene = media_lookup.get(sn, {})
+        video_data = media_scene.get("video", {})
+        audio_data = media_scene.get("audio", {})
         scene = Scene(
             id=str(uuid.uuid4()),
             project_id=project.id,
@@ -87,6 +95,8 @@ def _persist_project(
             narration=script_scene.get("narration", ""),
             dialogue=script_scene.get("dialogue", []),
             audio_cues=script_scene.get("audio_cues", []),
+            video_url=video_data.get("output_url") or video_data.get("local_path", ""),
+            audio_url=audio_data.get("path", ""),
         )
         db.add(scene)
 
@@ -169,6 +179,7 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "workflow_steps": result.get("workflow_steps", []),
             "node_timings": result.get("node_timings", {}),
             "revision_count": result.get("revision_count", 0),
+            "generated_media": result.get("generated_media", {}),
         },
     )
 
@@ -240,6 +251,8 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
                 "narration": s.narration,
                 "dialogue": s.dialogue,
                 "audio_cues": s.audio_cues,
+                "video_url": s.video_url,
+                "audio_url": s.audio_url,
             }
             for s in sorted(project.scenes, key=lambda x: x.scene_number)
         ],
@@ -251,6 +264,7 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 def get_agent_status():
     llm = _get_orchestrator()._llm
     from app.services.audio_generator import audio_generator
+    from app.services.runway_service import runway_service
     return {
         "status": "active",
         "backend": llm.active_backend,
@@ -261,6 +275,7 @@ def get_agent_status():
             "claude": bool(llm.anthropic_api_key),
         },
         "voice_backend": "elevenlabs" if audio_generator.is_elevenlabs_active else "local",
+        "video_backend": "runway" if runway_service.is_configured else "local",
     }
 
 
@@ -271,9 +286,73 @@ def get_graph_structure():
 
 
 @router.get("/pipeline-history")
-def get_pipeline_history():
+async def get_pipeline_history():
     """Return the history of pipeline runs with timings and error info."""
-    return {"runs": _get_orchestrator().get_run_history()}
+    from app.services.mongo_store import mongo_store
+    mongo_runs = await mongo_store.get_runs(limit=20)
+    if mongo_runs:
+        return {"runs": mongo_runs, "storage": "mongodb"}
+    return {"runs": _get_orchestrator().get_run_history(), "storage": "memory"}
+
+
+@router.get("/pipeline-analytics")
+async def get_pipeline_analytics():
+    """Return pipeline analytics (total runs, success rate, etc.)."""
+    from app.services.mongo_store import mongo_store
+    return await mongo_store.get_analytics()
+
+
+@router.get("/projects/{project_id}/media")
+async def get_project_media(project_id: str):
+    """Return generated media (video/audio) for a project."""
+    from app.services.mongo_store import mongo_store
+    content = await mongo_store.get_generated_content(project_id)
+    return {"project_id": project_id, "content": content}
+
+
+@router.post("/create-film-stream")
+async def create_film_stream(request: FilmRequest, db: Session = Depends(get_db)):
+    """SSE streaming endpoint for film creation with real-time progress."""
+    progress_queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+
+    async def _on_progress(data: Dict[str, Any]):
+        await progress_queue.put(data)
+
+    async def _event_generator():
+        orchestrator = _get_orchestrator()
+        project_id = str(uuid.uuid4())
+
+        task = asyncio.create_task(
+            orchestrator.create_film(
+                user_prompt=request.prompt,
+                style=request.style,
+                duration=request.duration,
+                on_progress=_on_progress,
+            )
+        )
+
+        while not task.done():
+            try:
+                progress = await asyncio.wait_for(progress_queue.get(), timeout=1.0)
+                yield f"data: {json.dumps(progress)}\n\n"
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+
+        result = task.result()
+
+        if result.get("status") == "success":
+            try:
+                _persist_project(db, request, result, project_id=project_id)
+            except Exception:
+                logger.exception("Failed to persist project (stream)")
+
+        yield f"data: {json.dumps({'type': 'complete', 'result': result, 'project_id': project_id})}\n\n"
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/clear-memory")
