@@ -11,7 +11,7 @@ def test_graph_endpoint(client):
     assert "nodes" in data
     assert "edges" in data
     assert "features" in data
-    assert len(data["nodes"]) == 6
+    assert len(data["nodes"]) == 11
     assert any(n["id"] == "review" for n in data["nodes"])
 
 
