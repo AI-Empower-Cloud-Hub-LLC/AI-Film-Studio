@@ -4,11 +4,12 @@ Base Agent Class for AI Film Studio
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import logging
-from anthropic import AsyncAnthropic
+
+from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-opus-4-6"
+DEFAULT_MODEL = "gemini-2.0-flash"
 
 
 class BaseAgent(ABC):
@@ -18,30 +19,20 @@ class BaseAgent(ABC):
         self.name = name
         self.model = model
         self.memory: list[Dict[str, Any]] = []
-        self._client: Optional[AsyncAnthropic] = None
-        if anthropic_api_key:
-            self._client = AsyncAnthropic(api_key=anthropic_api_key)
-        logger.info(f"Initialized {self.name} agent with model {self.model}")
+        self._llm = LLMService()
+        logger.info(f"Initialized {self.name} agent with model {self.model} (backend: {self._llm.active_backend})")
 
     @classmethod
     def from_settings(cls, **kwargs):
-        from app.core.config import settings
-        return cls(anthropic_api_key=settings.ANTHROPIC_API_KEY, **kwargs)
+        return cls(**kwargs)
 
     async def _ask_claude(self, prompt: str, system: str, max_tokens: int = 4096) -> str:
-        """Call Claude and return the text response."""
-        if not self._client:
-            raise RuntimeError(f"{self.name}: Anthropic client not initialised — set ANTHROPIC_API_KEY")
-        response = await self._client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
+        """Call the configured LLM backend and return the text response."""
+        return await self._llm.generate(
+            prompt=prompt,
             system=system,
-            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
         )
-        for block in response.content:
-            if block.type == "text":
-                return block.text
-        return ""
 
     @abstractmethod
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
