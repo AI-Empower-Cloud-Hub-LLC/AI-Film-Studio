@@ -51,13 +51,6 @@ class Settings(BaseSettings):
     ELEVENLABS_MODEL: str = "eleven_multilingual_v2"
     VOICE_BACKEND: str = "local"  # "local" (Coqui) or "elevenlabs"
 
-    # Runway (video generation — https://docs.dev.runwayml.com)
-    RUNWAY_API_KEY: str = ""
-
-    # MongoDB (optional — for pipeline history persistence)
-    MONGODB_URL: str = ""
-    MONGODB_DB_NAME: str = "ai_film_studio"
-
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
