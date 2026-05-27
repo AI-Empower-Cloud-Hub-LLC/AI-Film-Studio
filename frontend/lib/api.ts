@@ -113,6 +113,17 @@ export const projectsApi = {
   },
 }
 
+export type ProjectSummary = Project
+
+export const api = {
+  listProjects() {
+    return projectsApi.list()
+  },
+  getProject(id: string) {
+    return projectsApi.get(id)
+  },
+}
+
 export const promptsApi = {
   optimize(prompt: string, style: string, duration: number) {
     return apiFetch<{ optimized_prompt: string; was_optimized: boolean }>('/prompts/optimize', {
