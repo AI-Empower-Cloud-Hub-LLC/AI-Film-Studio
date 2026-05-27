@@ -36,6 +36,7 @@ build/
 # Environment variables
 .env
 .env.local
+.env.dev
 .env.development.local
 .env.test.local
 .env.production.local
@@ -95,3 +96,6 @@ ai-models/cache/
 models/*.pth
 models/*.safetensors
 models/*.ckpt
+
+# VS Code extensions
+*.vsix
