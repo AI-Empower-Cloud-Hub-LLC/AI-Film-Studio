@@ -13,6 +13,7 @@ from app.api.v1.endpoints import (
     projects,
     media,
     exports,
+    attachments,
 )
 from app.api.routes import autonomous
 
@@ -38,3 +39,4 @@ api_router.include_router(scenes.router, prefix="/scenes", tags=["Scenes"])
 api_router.include_router(voiceovers.router, prefix="/voiceovers", tags=["Voiceovers"])
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
 api_router.include_router(exports.router, prefix="/exports", tags=["Exports"])
+api_router.include_router(attachments.router, prefix="/attachments", tags=["Attachments"])

@@ -36,6 +36,7 @@ class Project(Base):
 
     scenes: Mapped[list["Scene"]] = relationship("Scene", back_populates="project", cascade="all, delete-orphan")
     scripts: Mapped[list["Script"]] = relationship("Script", back_populates="project", cascade="all, delete-orphan")
+    attachments: Mapped[list["Attachment"]] = relationship("Attachment", back_populates="project", cascade="all, delete-orphan")
 
 
 class Scene(Base):
@@ -69,3 +70,18 @@ class Script(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     project: Mapped["Project"] = relationship("Project", back_populates="scripts")
+
+
+class Attachment(Base):
+    __tablename__ = "attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"))
+    filename: Mapped[str] = mapped_column(String(255))
+    original_name: Mapped[str] = mapped_column(String(255))
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    content_type: Mapped[str] = mapped_column(String(100), default="application/octet-stream")
+    category: Mapped[str] = mapped_column(String(50), default="general")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    project: Mapped["Project"] = relationship("Project", back_populates="attachments")

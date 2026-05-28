@@ -305,3 +305,40 @@ export const promptsApi = {
     })
   },
 }
+
+export interface AttachmentInfo {
+  id: string
+  filename: string
+  size: number
+  content_type: string
+  category: string
+  created_at: string
+}
+
+export const attachmentsApi = {
+  list(projectId: string) {
+    return apiFetch<AttachmentInfo[]>(`/attachments/${projectId}`)
+  },
+  async upload(projectId: string, file: File, category = 'general'): Promise<AttachmentInfo> {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('category', category)
+    const res = await fetch(`${API_BASE}/api/v1/attachments/${projectId}`, {
+      method: 'POST',
+      body: form,
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail || `Upload failed ${res.status}`)
+    }
+    return res.json()
+  },
+  downloadUrl(projectId: string, attachmentId: string) {
+    return `${API_BASE}/api/v1/attachments/${projectId}/${attachmentId}/download`
+  },
+  async remove(projectId: string, attachmentId: string) {
+    return apiFetch<{ status: string; id: string }>(`/attachments/${projectId}/${attachmentId}`, {
+      method: 'DELETE',
+    })
+  },
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -19,9 +19,12 @@ import {
   MapPinIcon,
   PaintBrushIcon,
   CpuChipIcon,
+  PaperClipIcon,
+  CloudArrowUpIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { exportsApi, projectsApi } from '../../../lib/api'
-import type { ProjectDetail as ProjectDetailType } from '../../../lib/api'
+import { exportsApi, projectsApi, attachmentsApi } from '../../../lib/api'
+import type { ProjectDetail as ProjectDetailType, AttachmentInfo } from '../../../lib/api'
 
 export default function ProjectDetail() {
   const params = useParams()
@@ -33,6 +36,15 @@ export default function ProjectDetail() {
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [attachments, setAttachments] = useState<AttachmentInfo[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadCategory, setUploadCategory] = useState('general')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const loadAttachments = useCallback(() => {
+    if (!id) return
+    attachmentsApi.list(id).then(setAttachments).catch(() => {})
+  }, [id])
 
   useEffect(() => {
     if (!id) return
@@ -40,7 +52,36 @@ export default function ProjectDetail() {
       .then((data) => { setProject(data); setEditTitle(data.title) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [id])
+    loadAttachments()
+  }, [id, loadAttachments])
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || !id) return
+    setUploading(true)
+    try {
+      for (let i = 0; i < files.length; i++) {
+        await attachmentsApi.upload(id, files[i], uploadCategory)
+      }
+      loadAttachments()
+    } catch {
+      // upload error handled silently
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!id) return
+    await attachmentsApi.remove(id, attachmentId)
+    loadAttachments()
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
 
   const handleSave = async () => {
     if (!project) return
@@ -329,6 +370,94 @@ export default function ProjectDetail() {
             ))}
           </div>
         )}
+
+        {/* Attached Files */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mt-8 bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 shadow-sm dark:shadow-none"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <PaperClipIcon className="h-5 w-5 text-purple-500" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Attached Files {attachments.length > 0 && `(${attachments.length})`}
+              </h2>
+            </div>
+          </div>
+
+          {/* Upload area */}
+          <div
+            className="mb-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleUpload(e.dataTransfer.files) }}
+          >
+            <CloudArrowUpIcon className="h-10 w-10 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {uploading ? 'Uploading...' : 'Click or drag files here to upload'}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Max 50 MB per file</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => handleUpload(e.target.files)}
+            />
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <select
+                value={uploadCategory}
+                onChange={(e) => setUploadCategory(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-300"
+              >
+                <option value="general">General</option>
+                <option value="script">Script</option>
+                <option value="reference">Reference</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+                <option value="image">Image</option>
+                <option value="storyboard">Storyboard</option>
+              </select>
+            </div>
+          </div>
+
+          {/* File list */}
+          {attachments.length > 0 ? (
+            <div className="space-y-2">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700/50 rounded-lg group"
+                >
+                  <PaperClipIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{att.filename}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatFileSize(att.size)} &middot; {att.category} &middot; {new Date(att.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <a
+                    href={attachmentsApi.downloadUrl(id, att.id)}
+                    className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-500/30 transition-colors"
+                  >
+                    <ArrowDownTrayIcon className="h-3.5 w-3.5" /> Download
+                  </a>
+                  <button
+                    onClick={() => handleDeleteAttachment(att.id)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-2">No files attached yet</p>
+          )}
+        </motion.div>
       </div>
     </div>
   )
