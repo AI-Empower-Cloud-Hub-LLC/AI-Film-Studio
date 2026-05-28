@@ -46,12 +46,12 @@ function ProjectDetailPanel({ id }: { id: string }) {
   if (!detail) return null
 
   return (
-    <div className="pt-4 border-t border-gray-700 space-y-5">
+    <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-5">
       {/* Vision */}
       {detail.director_vision && (
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Director's Vision</p>
-          <p className="text-gray-300 text-sm leading-relaxed">{detail.director_vision}</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{detail.director_vision}</p>
         </div>
       )}
 
@@ -61,7 +61,7 @@ function ProjectDetailPanel({ id }: { id: string }) {
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Scenes</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {detail.scenes.map(scene => (
-              <div key={scene.scene_number} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <div key={scene.scene_number} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-purple-400">SCENE {scene.scene_number}</span>
                   <div className="flex gap-2 text-xs text-gray-500">
@@ -72,7 +72,7 @@ function ProjectDetailPanel({ id }: { id: string }) {
                     <span>{scene.duration}s</span>
                   </div>
                 </div>
-                <p className="text-gray-300 text-sm">{scene.description}</p>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">{scene.description}</p>
                 {scene.narration && (
                   <p className="text-gray-500 text-xs italic mt-2 line-clamp-2">{scene.narration}</p>
                 )}
@@ -112,7 +112,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
   return (
     <motion.div
       layout
-      className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden hover:border-gray-600 transition-colors"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors shadow-sm dark:shadow-none"
     >
       {/* Card header — always visible */}
       <button
@@ -121,7 +121,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-gray-200 font-medium truncate">{project.title}</p>
+            <p className="text-gray-800 dark:text-gray-200 font-medium truncate">{project.title}</p>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500">
               <span className="capitalize">{project.style}</span>
               <span>·</span>
@@ -179,17 +179,17 @@ export default function ProjectsPage() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       {/* Header */}
-      <header className="bg-gray-900/80 border-b border-gray-800 sticky top-0 z-10 backdrop-blur">
+      <header className="bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 backdrop-blur">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FilmIcon className="h-6 w-6 text-purple-400" />
-            <h1 className="text-xl font-bold">AI Film Studio</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">AI Film Studio</h1>
           </div>
           <nav className="flex items-center gap-4 text-sm">
-            <Link href="/" className="text-gray-400 hover:text-white transition-colors">Home</Link>
-            <Link href="/create" className="text-gray-400 hover:text-white transition-colors">Create</Link>
+            <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
+            <Link href="/create" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Create</Link>
           </nav>
         </div>
       </header>
@@ -198,13 +198,13 @@ export default function ProjectsPage() {
         {/* Page title */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold mb-1">Projects</h2>
-            <p className="text-gray-400">All your AI-generated film plans</p>
+            <h2 className="text-3xl font-bold mb-1 text-gray-900 dark:text-white">Projects</h2>
+            <p className="text-gray-500 dark:text-gray-400">All your AI-generated film plans</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={load}
-              className="p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-gray-400 hover:text-white transition-colors"
+              className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               title="Refresh"
             >
               <ArrowPathIcon className="h-5 w-5" />

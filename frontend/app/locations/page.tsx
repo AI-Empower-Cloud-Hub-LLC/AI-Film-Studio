@@ -72,13 +72,13 @@ export default function LocationsPage() {
               {/* Logistics Summary */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 {[
-                  { label: 'Total Locations', value: locationData.logistics_summary.total_locations, color: 'text-white' },
+                  { label: 'Total Locations', value: locationData.logistics_summary.total_locations, color: 'text-gray-900 dark:text-white' },
                   { label: 'Interior', value: locationData.logistics_summary.interior_count, color: 'text-blue-400' },
                   { label: 'Exterior', value: locationData.logistics_summary.exterior_count, color: 'text-green-400' },
                   { label: 'Permits Needed', value: locationData.logistics_summary.permits_needed, color: 'text-orange-400' },
                   { label: 'Est. Cost/Day', value: locationData.logistics_summary.estimated_total_cost, color: 'text-yellow-400' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 text-center">
+                  <div key={stat.label} className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-4 text-center">
                     <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
                     <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
                   </div>
@@ -93,11 +93,11 @@ export default function LocationsPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6"
+                    className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-6"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-lg font-bold text-white">{loc.location_name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{loc.location_name}</h3>
                         <p className="text-sm text-gray-400">{loc.city_country}</p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function LocationsPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-300 mb-4">{loc.geographic_description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{loc.geographic_description}</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
@@ -127,7 +127,7 @@ export default function LocationsPage() {
                       </div>
                       <div>
                         <span className="text-xs text-gray-500 uppercase">Weather</span>
-                        <p className="text-gray-300">{loc.weather_considerations}</p>
+                        <p className="text-gray-600 dark:text-gray-300">{loc.weather_considerations}</p>
                       </div>
                     </div>
 
@@ -140,7 +140,7 @@ export default function LocationsPage() {
                       <div className="mt-2 flex gap-2 items-center">
                         <span className="text-xs text-gray-500">Alternatives:</span>
                         {loc.alternatives.map((alt, j) => (
-                          <span key={j} className="px-2 py-0.5 bg-gray-700/50 text-gray-400 text-xs rounded">
+                          <span key={j} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 text-gray-400 text-xs rounded">
                             {alt}
                           </span>
                         ))}

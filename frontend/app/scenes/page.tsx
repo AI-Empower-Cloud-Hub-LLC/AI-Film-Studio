@@ -92,19 +92,19 @@ function ScenesContent() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                    className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                   >
                     {/* Scene header */}
                     <div className={`h-2 bg-gradient-to-r ${gradient}`} />
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-white">Scene {scene.scene_number}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Scene {scene.scene_number}</span>
                         <span className="px-2 py-0.5 bg-gray-700 text-gray-400 text-xs rounded-full">
                           {scene.duration}s
                         </span>
                       </div>
 
-                      <p className="text-sm text-gray-300 mb-3 line-clamp-3">{scene.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-3">{scene.description}</p>
 
                       <div className="flex flex-wrap gap-2 mb-3">
                         <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full">{scene.shot_type}</span>

@@ -71,8 +71,8 @@ export default function MoodBoardPage() {
             <div>
               {/* Style Guide */}
               {moodBoard.style_guide && (
-                <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6 mb-8">
-                  <h2 className="text-xl font-bold text-white mb-4">Style Guide</h2>
+                <div className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-6 mb-8">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Style Guide</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Color Palette</h3>
@@ -98,24 +98,24 @@ export default function MoodBoardPage() {
                       </div>
 
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Typography</h3>
-                      <p className="text-sm text-gray-300 mb-4">{moodBoard.style_guide.typography_style}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{moodBoard.style_guide.typography_style}</p>
 
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Lighting</h3>
-                      <p className="text-sm text-gray-300">{moodBoard.style_guide.lighting_approach}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{moodBoard.style_guide.lighting_approach}</p>
                     </div>
 
                     <div>
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Textures</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {moodBoard.style_guide.texture_keywords?.map((kw, i) => (
-                          <span key={i} className="px-2 py-1 bg-gray-700/50 text-gray-300 text-xs rounded">
+                          <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-xs rounded">
                             {kw}
                           </span>
                         ))}
                       </div>
 
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Composition Rules</h3>
-                      <ul className="text-sm text-gray-300 space-y-1">
+                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                         {moodBoard.style_guide.composition_rules?.map((rule, i) => (
                           <li key={i} className="flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
@@ -134,14 +134,14 @@ export default function MoodBoardPage() {
                       </div>
 
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mt-4 mb-2">Overall Tone</h3>
-                      <p className="text-sm text-gray-300">{moodBoard.style_guide.overall_tone}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{moodBoard.style_guide.overall_tone}</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Mood Images Grid */}
-              <h2 className="text-xl font-bold text-white mb-4">Mood Images ({moodBoard.total_images})</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Mood Images ({moodBoard.total_images})</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                 {moodBoard.mood_images.map((img, i) => (
                   <motion.div
@@ -149,7 +149,7 @@ export default function MoodBoardPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                    className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                   >
                     {/* Color swatch preview */}
                     <div className="h-24 flex">
@@ -163,7 +163,7 @@ export default function MoodBoardPage() {
                     </div>
 
                     <div className="p-4">
-                      <h3 className="text-sm font-bold text-white mb-1">{img.title}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">{img.title}</h3>
                       <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-xs rounded-full">
                         {img.category.replace('_', ' ')}
                       </span>

@@ -72,10 +72,10 @@ def _persist_project(
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
         refined_screenplay=result.get("refined_screenplay"),
-        cast_data=result.get("cast_data"),
-        location_data=result.get("location_data"),
-        vfx_data=result.get("vfx_data"),
-        mood_board_data=result.get("mood_board_data"),
+        cast_data=result.get("cast"),
+        location_data=result.get("locations"),
+        vfx_data=result.get("vfx_plan"),
+        mood_board_data=result.get("mood_board"),
     )
     db.add(project)
     db.flush()  # populate project.id before adding children
@@ -180,10 +180,10 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
             "refined_screenplay": result.get("refined_screenplay"),
-            "cast_data": result.get("cast_data"),
-            "location_data": result.get("location_data"),
-            "vfx_data": result.get("vfx_data"),
-            "mood_board_data": result.get("mood_board_data"),
+            "cast": result.get("cast"),
+            "locations": result.get("locations"),
+            "vfx_plan": result.get("vfx_plan"),
+            "mood_board": result.get("mood_board"),
         },
     )
 

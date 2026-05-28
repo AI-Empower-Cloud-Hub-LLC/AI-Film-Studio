@@ -72,7 +72,7 @@ function StoryboardsContent() {
               <button
                 onClick={generateAll}
                 disabled={generatingFrame !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium text-gray-900 dark:text-white transition-colors"
               >
                 <SparklesIcon className="h-4 w-4" />
                 Generate All Images
@@ -119,7 +119,7 @@ function StoryboardsContent() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.06 }}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                  className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                 >
                   {/* Frame visual */}
                   <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative overflow-hidden">
@@ -148,13 +148,13 @@ function StoryboardsContent() {
                     <div className="absolute top-3 left-3 px-2 py-0.5 bg-black/60 text-white text-xs font-medium rounded">
                       Frame {frame.scene_number}
                     </div>
-                    <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-gray-300 text-xs rounded">
+                    <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-gray-600 dark:text-gray-300 text-xs rounded">
                       {frame.shot_type}
                     </div>
                   </div>
 
                   <div className="p-4">
-                    <p className="text-sm text-gray-300 mb-2 line-clamp-2">{frame.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">{frame.description}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full">{frame.mood}</span>
                       <span>{frame.duration}s</span>

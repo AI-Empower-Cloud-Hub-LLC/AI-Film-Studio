@@ -82,12 +82,12 @@ export default function VFXPlanPage() {
               {/* VFX Summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {[
-                  { label: 'Total Scenes', value: vfxData.vfx_summary.total_scenes, color: 'text-white' },
+                  { label: 'Total Scenes', value: vfxData.vfx_summary.total_scenes, color: 'text-gray-900 dark:text-white' },
                   { label: 'VFX Scenes', value: vfxData.vfx_summary.scenes_with_vfx, color: 'text-purple-400' },
                   { label: 'High/Extreme', value: (vfxData.vfx_summary.complexity_breakdown.high || 0) + (vfxData.vfx_summary.complexity_breakdown.extreme || 0), color: 'text-orange-400' },
                   { label: 'Est. Budget', value: vfxData.vfx_summary.estimated_total_cost, color: 'text-green-400' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 text-center">
+                  <div key={stat.label} className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-4 text-center">
                     <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
                     <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
                   </div>
@@ -102,7 +102,7 @@ export default function VFXPlanPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className={`bg-gray-800/40 border rounded-xl p-5 ${
+                    className={`bg-white dark:bg-gray-800/40 border rounded-xl p-5 ${
                       shot.vfx_needed ? 'border-purple-500/30' : 'border-gray-700/50'
                     }`}
                   >
@@ -125,7 +125,7 @@ export default function VFXPlanPage() {
                       <span className="text-sm text-green-400 font-medium">{shot.estimated_cost}</span>
                     </div>
 
-                    <p className="text-sm text-gray-300 mb-3">{shot.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{shot.description}</p>
 
                     {shot.vfx_needed && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

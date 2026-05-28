@@ -84,7 +84,7 @@ export default function ScreenplayPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6"
+                  className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-6"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-mono font-bold text-yellow-400">
@@ -93,7 +93,7 @@ export default function ScreenplayPage() {
                     <span className="text-xs text-gray-500">Scene {scene.scene_number}</span>
                   </div>
 
-                  <p className="text-gray-300 mb-4 font-mono text-sm leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 font-mono text-sm leading-relaxed">
                     {scene.action_lines}
                   </p>
 
@@ -101,11 +101,11 @@ export default function ScreenplayPage() {
                     <div className="mb-4 space-y-3">
                       {scene.dialogue.map((d, j) => (
                         <div key={j} className="text-center font-mono">
-                          <div className="text-sm font-bold text-white uppercase">{d.character}</div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white uppercase">{d.character}</div>
                           {d.parenthetical && (
                             <div className="text-xs text-gray-500">({d.parenthetical})</div>
                           )}
-                          <div className="text-sm text-gray-300">{d.line}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300">{d.line}</div>
                         </div>
                       ))}
                     </div>

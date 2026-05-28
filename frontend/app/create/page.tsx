@@ -18,9 +18,9 @@ import { projectsApi } from '../../lib/api'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const AGENTS = [
-  'Director', 'Screenwriter', 'ScreenplayRefinement',
-  'Cinematographer', 'SoundDesigner', 'CastSelection', 'LocationResearch',
-  'VFXPlanning', 'MoodBoard', 'Editor',
+  'Director', 'Screenwriter', 'Screenplay Refinement',
+  'Cinematographer', 'Sound Designer', 'Cast Selection', 'Location Research',
+  'VFX Planning', 'Mood Board', 'Editor',
 ]
 
 interface AgentProgress {

@@ -81,13 +81,13 @@ export default function CastPage() {
               {/* Casting Sheet Summary */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 {[
-                  { label: 'Total', value: cast.casting_sheet.total_characters, color: 'text-white' },
+                  { label: 'Total', value: cast.casting_sheet.total_characters, color: 'text-gray-900 dark:text-white' },
                   { label: 'Leads', value: cast.casting_sheet.leads, color: 'text-yellow-400' },
                   { label: 'Supporting', value: cast.casting_sheet.supporting, color: 'text-blue-400' },
                   { label: 'Extras', value: cast.casting_sheet.extras, color: 'text-gray-400' },
                   { label: 'Budget', value: cast.casting_sheet.estimated_total_budget, color: 'text-green-400' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 text-center">
+                  <div key={stat.label} className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-4 text-center">
                     <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
                     <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
                   </div>
@@ -102,28 +102,28 @@ export default function CastPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                    className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                   >
                     <div className="h-32 bg-gradient-to-br from-purple-900/40 to-gray-800 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-purple-400">
+                      <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-2xl font-bold text-purple-400">
                         {ch.character_name.charAt(0)}
                       </div>
                     </div>
 
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-bold text-white">{ch.character_name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{ch.character_name}</h3>
                         <span className={`px-2 py-0.5 text-xs rounded-full border ${roleColor(ch.role_type)}`}>
                           {ch.role_type}
                         </span>
                       </div>
 
-                      <p className="text-sm text-gray-300 mb-3">{ch.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{ch.description}</p>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-500">Physical</span>
-                          <span className="text-gray-300 text-right ml-2">{ch.physical_description}</span>
+                          <span className="text-gray-600 dark:text-gray-300 text-right ml-2">{ch.physical_description}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Budget</span>
