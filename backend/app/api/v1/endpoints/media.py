@@ -54,6 +54,17 @@ async def generate_tts(req: TTSRequest):
     return result
 
 
+class BatchTTSRequest(BaseModel):
+    items: list[dict] = Field(..., min_length=1)
+
+
+@router.post("/generate-tts-batch")
+async def generate_tts_batch(req: BatchTTSRequest):
+    """Generate voiceovers for multiple texts in sequence."""
+    results = await audio_generator.generate_batch(req.items)
+    return {"results": results, "total": len(results)}
+
+
 @router.post("/generate-video")
 async def generate_video(req: VideoGenerateRequest):
     result = await runway_service.generate_video(

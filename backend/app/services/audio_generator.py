@@ -37,6 +37,21 @@ class AudioGenerator:
             return await self._elevenlabs_generate(text, voice_type)
         return await self._local_generate(text, voice_type, pace)
 
+    async def generate_batch(
+        self,
+        items: List[Dict[str, str]],
+    ) -> List[Dict[str, Any]]:
+        """Generate voiceovers for multiple text items."""
+        results = []
+        for item in items:
+            result = await self.generate_voiceover(
+                text=item.get("text", ""),
+                voice_type=item.get("voice", "neutral"),
+                pace=item.get("pace", "normal"),
+            )
+            results.append(result)
+        return results
+
     async def _local_generate(
         self,
         text: str,
@@ -46,6 +61,13 @@ class AudioGenerator:
         logger.info("Voiceover request (gTTS): %d chars, voice=%s", len(text), voice_type)
         os.makedirs("media/audio", exist_ok=True)
         audio_path = f"media/audio/voiceover_{abs(hash(text)) % 10000}.mp3"
+        if os.path.exists(audio_path):
+            return {
+                "status": "completed",
+                "backend": "cache",
+                "path": audio_path,
+                "size_bytes": os.path.getsize(audio_path),
+            }
         try:
             from gtts import gTTS
             slow = pace == "slow"
