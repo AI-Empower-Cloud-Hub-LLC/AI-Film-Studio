@@ -149,6 +149,9 @@ export const exportsApi = {
   pdfUrl(projectId: string) {
     return `${API_BASE}/api/v1/exports/pdf/${projectId}`
   },
+  imagesUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/images/${projectId}`
+  },
 }
 
 export function mediaUrl(path: string): string {

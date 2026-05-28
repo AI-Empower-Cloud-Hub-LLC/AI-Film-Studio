@@ -1,10 +1,12 @@
 """
-Export endpoints — PDF scripts, JSON project data, storyboard images.
+Export endpoints — PDF scripts, JSON project data, storyboard image packs.
 """
 import io
 import json
 import logging
 import os
+import zipfile
+from pathlib import Path
 from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
@@ -115,4 +117,39 @@ async def export_pdf(project_id: str):
         buffer,
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={safe_title}.pdf"},
+    )
+
+
+@router.get("/images/{project_id}")
+async def export_images(project_id: str):
+    """Export all generated storyboard images as a ZIP archive."""
+    data = _get_project_data(project_id)
+    media_dir = Path("media/images")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        found = 0
+        for scene in data.get("scenes", []):
+            prompt = scene.get("visual_prompt") or scene.get("description", "")
+            if not prompt:
+                continue
+            import hashlib
+            prompt_hash = hashlib.md5(prompt.encode()).hexdigest()[:10]
+            for ext in ("png", "jpg"):
+                candidate = media_dir / f"storyboard_{prompt_hash}.{ext}"
+                if candidate.exists():
+                    arcname = f"scene_{scene['scene_number']:02d}.{ext}"
+                    zf.write(candidate, arcname)
+                    found += 1
+                    break
+
+        if found == 0:
+            zf.writestr("README.txt", "No generated images found. Use the Storyboards page to generate images first.")
+
+    buffer.seek(0)
+    safe_title = data["title"][:40].replace(" ", "_").replace("/", "_")
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={safe_title}_images.zip"},
     )
