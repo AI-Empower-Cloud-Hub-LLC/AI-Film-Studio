@@ -3,7 +3,7 @@ AI Film Studio - Main Application Entry Point
 """
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +11,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import uvicorn
 import logging
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -25,9 +29,26 @@ from app.services.ws_manager import ws_manager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Sentry error monitoring (only if DSN is configured)
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.1 if settings.APP_ENV == "production" else 1.0,
+        environment=settings.APP_ENV,
+        send_default_pii=False,
+    )
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -47,16 +68,22 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="AI-powered end-to-end video production platform",
     version=settings.API_VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
 )
+
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Logging Middleware
@@ -79,7 +106,8 @@ app.mount("/media", StaticFiles(directory="media"), name="media")
 
 
 @app.get("/")
-async def root():
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+async def root(request: Request):
     """Root endpoint"""
     return {
         "message": "Welcome to AI Film Studio API",

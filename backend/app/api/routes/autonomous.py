@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.agents.orchestrator import AgentOrchestrator
 from app.database import get_db
 from app.models.project import Project, Scene, Script, ProjectStatus
+from app.services.sanitizer import sanitize_prompt, sanitize_title
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,8 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
     """
     from app.services.ws_manager import ws_manager
 
+    request.prompt = sanitize_prompt(request.prompt)
+    request.style = sanitize_title(request.style)
     logger.info(f"Film creation started: {request.prompt[:60]}...")
 
     project_id = str(uuid.uuid4())

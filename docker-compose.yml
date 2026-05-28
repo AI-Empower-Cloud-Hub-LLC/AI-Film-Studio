@@ -59,8 +59,17 @@ services:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
       - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@aifilmstudio.com}
+      - EMAIL_VERIFICATION_REQUIRED=${EMAIL_VERIFICATION_REQUIRED:-false}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
     volumes:
       - backend_media:/app/media
+      - backend_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -119,8 +128,11 @@ services:
     container_name: ai-film-studio-nginx
     ports:
       - "${NGINX_PORT:-80}:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
     depends_on:
       - backend
       - frontend
@@ -130,3 +142,6 @@ volumes:
   postgres_data:
   redis_data:
   backend_media:
+  backend_uploads:
+  certbot_www:
+  certbot_conf:

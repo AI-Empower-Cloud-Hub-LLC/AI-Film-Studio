@@ -42,6 +42,15 @@ requests==2.31.0
 aiohttp==3.13.3
 email-validator==2.1.0
 
+# Rate Limiting
+slowapi>=0.1.9
+
+# Error Monitoring
+sentry-sdk[fastapi]>=1.40.0
+
+# Input Sanitization
+bleach>=6.1.0
+
 # Text-to-Speech
 gTTS>=2.5.0
 

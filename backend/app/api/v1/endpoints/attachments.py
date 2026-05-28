@@ -1,34 +1,77 @@
 """
 Attachments endpoint — upload and download files for projects.
 """
-import os
 import uuid
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+from app.core.config import settings
 from app.database import SessionLocal
 from app.models import Project, Attachment
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
+ALLOWED_CATEGORIES = {"general", "script", "reference", "audio", "video", "image", "storyboard"}
+
+DANGEROUS_EXTENSIONS = {
+    ".exe", ".bat", ".cmd", ".com", ".msi", ".scr", ".pif",
+    ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".ps1",
+    ".sh", ".cgi", ".php", ".py", ".rb", ".pl",
+}
+
+
+def _validate_file(filename: str, content_type: str, size: int) -> None:
+    """Validate uploaded file for security."""
+    ext = Path(filename).suffix.lower()
+
+    if ext in DANGEROUS_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext}' is not allowed for security reasons",
+        )
+
+    if settings.ALLOWED_EXTENSIONS and ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext}' is not in the allowed list. "
+            f"Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}",
+        )
+
+    if size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
+
+    if size == 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+
 
 @router.post("/{project_id}")
+@limiter.limit("30/minute")
 async def upload_file(
+    request: Request,
     project_id: str,
     file: UploadFile = File(...),
     category: str = Form("general"),
 ):
     """Upload a file attachment to a project."""
+    if category not in ALLOWED_CATEGORIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid category. Allowed: {', '.join(sorted(ALLOWED_CATEGORIES))}",
+        )
+
     db = SessionLocal()
     try:
         project = db.query(Project).filter(Project.id == project_id).first()
@@ -36,8 +79,12 @@ async def upload_file(
             raise HTTPException(status_code=404, detail="Project not found")
 
         content = await file.read()
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
+
+        _validate_file(
+            filename=file.filename or "file",
+            content_type=file.content_type or "application/octet-stream",
+            size=len(content),
+        )
 
         ext = Path(file.filename or "file").suffix
         stored_name = f"{uuid.uuid4().hex}{ext}"
