@@ -35,6 +35,15 @@ class ImageGenerator:
             return "runway"
         return "local"
 
+    def _cached_path(self, prompt: str, category: str) -> Path | None:
+        """Return path if an image for this prompt already exists on disk."""
+        prompt_hash = hashlib.md5(prompt.encode()).hexdigest()[:10]
+        for ext in ("png", "jpg", "svg"):
+            candidate = MEDIA_DIR / f"{category}_{prompt_hash}.{ext}"
+            if candidate.exists():
+                return candidate
+        return None
+
     async def generate(
         self,
         prompt: str,
@@ -42,7 +51,16 @@ class ImageGenerator:
         width: int = 512,
         height: int = 512,
     ) -> dict:
-        """Generate an image from a text prompt."""
+        """Generate an image from a text prompt. Returns cached result if available."""
+        cached = self._cached_path(prompt, category)
+        if cached and not str(cached).endswith(".svg"):
+            return {
+                "status": "generated",
+                "path": str(cached),
+                "prompt": prompt,
+                "category": category,
+                "backend": "cache",
+            }
         if self.google_api_key:
             result = await self._gemini_generate(prompt, category, width, height)
             if result["status"] != "placeholder":
