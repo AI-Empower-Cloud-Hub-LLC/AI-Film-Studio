@@ -96,7 +96,14 @@ class AgentOrchestrator:
     """Advanced LangGraph orchestrator with 10 agent nodes, parallel execution,
     error handling, checkpointing, and quality review loop."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
+    def __init__(self, llm: Optional[LLMService] = None, model: str = None, anthropic_api_key: str = ""):
+        """Initialize orchestrator with optional LLM service and backward-compatible parameters.
+        
+        Args:
+            llm: LLMService instance (preferred)
+            model: Deprecated parameter for backward compatibility
+            anthropic_api_key: Deprecated parameter for backward compatibility
+        """
         self._llm = llm or llm_service
         self.director = DirectorAgent(llm=self._llm)
         self.screenwriter = ScreenwriterAgent(llm=self._llm)
