@@ -42,7 +42,9 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(res => {
+      setProjects(res.items)
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const stats: Record<string, number> = {

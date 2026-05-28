@@ -27,7 +27,7 @@ function VoiceoversContent() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadNarrations = async (id: string) => {

@@ -14,7 +14,7 @@ export default function VFXPlanPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadVFX = async (id: string) => {

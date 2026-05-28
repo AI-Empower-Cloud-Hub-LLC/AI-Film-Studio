@@ -119,31 +119,36 @@ async def upload_file(
 
 
 @router.get("/{project_id}")
-async def list_attachments(project_id: str):
-    """List all attachments for a project."""
+async def list_attachments(project_id: str, page: int = 1, per_page: int = 20):
+    """List attachments for a project with pagination."""
     db = SessionLocal()
     try:
         project = db.query(Project).filter(Project.id == project_id).first()
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        attachments = (
-            db.query(Attachment)
-            .filter(Attachment.project_id == project_id)
-            .order_by(Attachment.created_at.desc())
-            .all()
-        )
-        return [
-            {
-                "id": a.id,
-                "filename": a.original_name,
-                "size": a.file_size,
-                "content_type": a.content_type,
-                "category": a.category,
-                "created_at": str(a.created_at),
-            }
-            for a in attachments
-        ]
+        query = db.query(Attachment).filter(Attachment.project_id == project_id)
+        total = query.count()
+        offset = (max(page, 1) - 1) * per_page
+        attachments = query.order_by(Attachment.created_at.desc()).offset(offset).limit(per_page).all()
+
+        return {
+            "items": [
+                {
+                    "id": a.id,
+                    "filename": a.original_name,
+                    "size": a.file_size,
+                    "content_type": a.content_type,
+                    "category": a.category,
+                    "created_at": str(a.created_at),
+                }
+                for a in attachments
+            ],
+            "total": total,
+            "page": max(page, 1),
+            "per_page": per_page,
+            "total_pages": max(1, (total + per_page - 1) // per_page),
+        }
     finally:
         db.close()
 

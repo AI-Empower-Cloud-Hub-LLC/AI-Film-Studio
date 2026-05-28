@@ -15,6 +15,8 @@ from app.agents.orchestrator import AgentOrchestrator
 from app.database import get_db
 from app.models.project import Project, Scene, Script, ProjectStatus
 from app.services.sanitizer import sanitize_prompt, sanitize_title
+from app.api.deps import get_current_user, get_optional_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -191,35 +193,54 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
     )
 
 
-@router.get("/projects", response_model=List[Dict[str, Any]])
-def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    """List all film projects, newest first."""
-    # Use a COUNT subquery to avoid the N+1 per-project lazy-load.
+@router.get("/projects")
+def list_projects(
+    page: int = 1,
+    per_page: int = 20,
+    search: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    style_filter: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """List film projects with pagination, search, and filters."""
     scene_count_sq = (
         db.query(func.count(Scene.id))
         .filter(Scene.project_id == Project.id)
         .correlate(Project)
         .scalar_subquery()
     )
-    rows = (
-        db.query(Project, scene_count_sq.label("scene_count"))
-        .order_by(Project.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    return [
-        {
-            "id": p.id,
-            "title": p.title,
-            "style": p.style,
-            "duration": p.duration,
-            "status": p.status,
-            "scene_count": count,
-            "created_at": p.created_at.isoformat(),
-        }
-        for p, count in rows
-    ]
+
+    query = db.query(Project, scene_count_sq.label("scene_count"))
+
+    if search:
+        query = query.filter(Project.title.ilike(f"%{search}%"))
+    if status_filter:
+        query = query.filter(Project.status == status_filter)
+    if style_filter:
+        query = query.filter(Project.style == style_filter)
+
+    total = query.count()
+    offset = (max(page, 1) - 1) * per_page
+    rows = query.order_by(Project.created_at.desc()).offset(offset).limit(per_page).all()
+
+    return {
+        "items": [
+            {
+                "id": p.id,
+                "title": p.title,
+                "style": p.style,
+                "duration": p.duration,
+                "status": p.status,
+                "scene_count": count,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p, count in rows
+        ],
+        "total": total,
+        "page": max(page, 1),
+        "per_page": per_page,
+        "total_pages": max(1, (total + per_page - 1) // per_page),
+    }
 
 
 @router.get("/projects/{project_id}", response_model=Dict[str, Any])
@@ -340,9 +361,10 @@ def get_pipeline_history():
 
 
 @router.get("/admin/stats")
-def admin_stats(db: Session = Depends(get_db)):
-    """Admin dashboard: system-wide statistics."""
-    from app.models.user import User
+def admin_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Admin dashboard: system-wide statistics. Requires admin role."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     total_projects = db.query(func.count(Project.id)).scalar()
     total_users = db.query(func.count(User.id)).scalar()
     total_scenes = db.query(func.count(Scene.id)).scalar()
@@ -358,8 +380,10 @@ def admin_stats(db: Session = Depends(get_db)):
 
 
 @router.post("/clear-memory")
-def clear_agent_memory():
-    """Clear in-memory context from all agents."""
+def clear_agent_memory(current_user: User = Depends(get_current_user)):
+    """Clear in-memory context from all agents. Requires admin role."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     for orch in _orchestrators.values():
         orch.clear_all_memory()
     return {"status": "success", "message": "All agent memories cleared"}

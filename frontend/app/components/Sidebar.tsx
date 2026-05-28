@@ -24,6 +24,8 @@ import {
   ChartBarIcon,
   SunIcon,
   MoonIcon,
+  UserIcon,
+  DocumentTextIcon as DocIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -41,6 +43,8 @@ const NAV = [
   { href: '/scenes', label: 'Scenes', icon: VideoCameraIcon },
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
   { href: '/admin', label: 'Admin', icon: ChartBarIcon },
+  { href: '/profile', label: 'Profile', icon: UserIcon },
+  { href: '/terms', label: 'Legal', icon: DocIcon },
 ]
 
 function ThemeToggle() {

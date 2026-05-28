@@ -235,17 +235,28 @@ def get_profile(current_user: User = Depends(get_current_user)):
     return _user_response(current_user)
 
 
+class UpdateProfileRequest(BaseModel):
+    full_name: str | None = None
+    avatar_url: str | None = None
+    username: str | None = None
+
+
 @router.put("/me", response_model=UserResponse)
 def update_profile(
-    full_name: str | None = None,
-    avatar_url: str | None = None,
+    body: UpdateProfileRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if full_name is not None:
-        current_user.full_name = sanitize_text(full_name)
-    if avatar_url is not None:
-        current_user.avatar_url = avatar_url
+    """Update the current user's profile."""
+    if body.full_name is not None:
+        current_user.full_name = sanitize_text(body.full_name)
+    if body.avatar_url is not None:
+        current_user.avatar_url = body.avatar_url
+    if body.username is not None:
+        existing = db.query(User).filter(User.username == body.username, User.id != current_user.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Username already taken")
+        current_user.username = sanitize_text(body.username)
     db.commit()
     db.refresh(current_user)
     return _user_response(current_user)

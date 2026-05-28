@@ -14,6 +14,7 @@ import Sidebar from '../components/Sidebar'
 import AuthGuard from '../components/AuthGuard'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { projectsApi } from '../../lib/api'
+import { addNotification } from '../components/NotificationToast'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -101,6 +102,8 @@ function CreateFilmContent() {
       AGENTS.forEach((a) =>
         setAgentStates((prev) => ({ ...prev, [a]: { status: 'completed', detail: '' } })),
       )
+
+      addNotification('success', 'Film Created!', `Your ${formData.style} film has been generated successfully.`)
 
       setTimeout(() => {
         router.push(`/projects/${result.project_id}`)

@@ -40,8 +40,17 @@ export interface UserInfo {
   full_name: string
   is_active: boolean
   is_admin: boolean
+  email_verified?: boolean
   avatar_url: string | null
   created_at: string
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
 }
 
 export const authApi = {
@@ -59,6 +68,20 @@ export const authApi = {
   },
   me() {
     return apiFetch<UserInfo>('/auth/me', { auth: true })
+  },
+  updateProfile(data: { full_name?: string; username?: string; avatar_url?: string }) {
+    return apiFetch<UserInfo>('/auth/me', {
+      method: 'PUT',
+      auth: true,
+      body: JSON.stringify(data),
+    })
+  },
+  changePassword(current_password: string, new_password: string) {
+    return apiFetch<{ status: string; message: string }>('/auth/change-password', {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ current_password, new_password }),
+    })
   },
 }
 
@@ -211,8 +234,15 @@ export interface Scene {
 }
 
 export const projectsApi = {
-  list() {
-    return apiFetch<Project[]>('/autonomous/projects')
+  list(params?: { page?: number; per_page?: number; search?: string; status?: string; style?: string }) {
+    const q = new URLSearchParams()
+    if (params?.page) q.set('page', String(params.page))
+    if (params?.per_page) q.set('per_page', String(params.per_page))
+    if (params?.search) q.set('search', params.search)
+    if (params?.status) q.set('status_filter', params.status)
+    if (params?.style) q.set('style_filter', params.style)
+    const qs = q.toString()
+    return apiFetch<PaginatedResponse<Project>>(`/autonomous/projects${qs ? `?${qs}` : ''}`)
   },
   get(id: string) {
     return apiFetch<ProjectDetail>(`/autonomous/projects/${id}`)
@@ -239,8 +269,8 @@ export const projectsApi = {
 export type ProjectSummary = Project
 
 export const api = {
-  listProjects() {
-    return projectsApi.list()
+  listProjects(params?: { page?: number; per_page?: number; search?: string; status?: string; style?: string }) {
+    return projectsApi.list(params)
   },
   getProject(id: string) {
     return projectsApi.get(id)

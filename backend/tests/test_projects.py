@@ -6,7 +6,11 @@ Tests for project and autonomous endpoints.
 def test_list_projects_empty(client):
     res = client.get("/api/v1/autonomous/projects")
     assert res.status_code == 200
-    assert res.json() == []
+    data = res.json()
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
+    assert data["total_pages"] == 1
 
 
 def test_get_project_not_found(client):
@@ -21,10 +25,10 @@ def test_agent_status(client):
     assert data["status"] == "active"
 
 
-def test_clear_memory(client):
+def test_clear_memory_requires_auth(client):
     res = client.post("/api/v1/autonomous/clear-memory")
-    assert res.status_code == 200
-    assert res.json()["status"] == "success"
+    # Unauthenticated user gets 401
+    assert res.status_code == 401
 
 
 def test_create_film_validation_short_prompt(client):

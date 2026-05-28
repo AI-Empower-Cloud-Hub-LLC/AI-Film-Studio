@@ -43,7 +43,10 @@ export default function ProjectDetail() {
 
   const loadAttachments = useCallback(() => {
     if (!id) return
-    attachmentsApi.list(id).then(setAttachments).catch(() => {})
+    attachmentsApi.list(id).then(res => {
+      const items = Array.isArray(res) ? res : (res as { items: AttachmentInfo[] }).items ?? []
+      setAttachments(items)
+    }).catch(() => {})
   }, [id])
 
   useEffect(() => {
