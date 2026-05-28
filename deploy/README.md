@@ -96,6 +96,15 @@ The app will be available at:
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
+## CI/CD Auto-Deploy
+
+The GitHub Actions workflow at `.github/workflows/deploy-gcp.yml` automatically deploys on push to `main` when changes are detected in `backend/`, `frontend/`, or `docker-compose.yml`. You can also trigger manual deploys via the Actions tab.
+
+Required GitHub Secrets:
+- `GCP_SA_KEY` — Service account JSON key with Cloud Run Admin and Storage Admin roles
+- `GCP_PROJECT_ID` — Your GCP project ID
+- `GOOGLE_API_KEY` — Gemini API key for the LLM backend
+
 ## Production Considerations
 
 - Use **Cloud SQL** (PostgreSQL) instead of SQLite for persistent storage
@@ -103,3 +112,4 @@ The app will be available at:
 - Enable **Cloud CDN** for the frontend
 - Use **Secret Manager** for API keys instead of environment variables
 - Set up a custom domain with **Cloud Load Balancer**
+- Enable **Cloud Monitoring** and set up alerts for error rates and latency
