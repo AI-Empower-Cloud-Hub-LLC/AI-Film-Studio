@@ -13,6 +13,12 @@ import {
   ArrowDownTrayIcon,
   PencilIcon,
   TrashIcon,
+  FolderArrowDownIcon,
+  FilmIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  PaintBrushIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline'
 import { exportsApi, projectsApi } from '../../../lib/api'
 import type { ProjectDetail as ProjectDetailType } from '../../../lib/api'
@@ -131,20 +137,10 @@ export default function ProjectDetail() {
               <TrashIcon className="h-4 w-4" /> {deleting ? 'Deleting...' : 'Delete'}
             </button>
             <a
-              href={exportsApi.pdfUrl(project.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-medium hover:bg-red-600/30 transition-colors"
+              href={exportsApi.zipUrl(project.id)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-xs font-medium transition-colors"
             >
-              <ArrowDownTrayIcon className="h-4 w-4" /> PDF
-            </a>
-            <a
-              href={exportsApi.jsonUrl(project.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" /> JSON
+              <FolderArrowDownIcon className="h-4 w-4" /> Download All
             </a>
           </div>
         </div>
@@ -163,6 +159,83 @@ export default function ProjectDetail() {
             </div>
           </div>
         </motion.div>
+
+        {/* Downloads */}
+        {project.status === 'completed' && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 shadow-sm dark:shadow-none"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <ArrowDownTrayIcon className="h-5 w-5 text-purple-500" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Downloads</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <a
+                href={exportsApi.zipUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors group"
+              >
+                <FolderArrowDownIcon className="h-8 w-8 text-purple-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">All Assets (ZIP)</span>
+              </a>
+              <a
+                href={exportsApi.pdfUrl(project.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors group"
+              >
+                <DocumentTextIcon className="h-8 w-8 text-red-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-red-700 dark:text-red-300">Script (PDF)</span>
+              </a>
+              <a
+                href={exportsApi.screenplayUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors group"
+              >
+                <FilmIcon className="h-8 w-8 text-blue-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Screenplay</span>
+              </a>
+              <a
+                href={exportsApi.castUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors group"
+              >
+                <UserGroupIcon className="h-8 w-8 text-green-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-300">Cast Sheet</span>
+              </a>
+              <a
+                href={exportsApi.locationsUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors group"
+              >
+                <MapPinIcon className="h-8 w-8 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">Locations</span>
+              </a>
+              <a
+                href={exportsApi.vfxUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-500/20 transition-colors group"
+              >
+                <CpuChipIcon className="h-8 w-8 text-cyan-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-cyan-700 dark:text-cyan-300">VFX Plan</span>
+              </a>
+              <a
+                href={exportsApi.moodBoardUrl(project.id)}
+                className="flex flex-col items-center gap-2 p-4 bg-pink-50 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/30 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-500/20 transition-colors group"
+              >
+                <PaintBrushIcon className="h-8 w-8 text-pink-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-pink-700 dark:text-pink-300">Mood Board</span>
+              </a>
+              <a
+                href={exportsApi.jsonUrl(project.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-4 bg-gray-50 dark:bg-gray-500/10 border border-gray-200 dark:border-gray-500/30 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-500/20 transition-colors group"
+              >
+                <ArrowDownTrayIcon className="h-8 w-8 text-gray-500 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Raw Data (JSON)</span>
+              </a>
+            </div>
+          </motion.div>
+        )}
 
         {/* Director Vision */}
         {project.director_vision && (

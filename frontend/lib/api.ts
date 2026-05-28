@@ -272,6 +272,24 @@ export const exportsApi = {
   pdfUrl(projectId: string) {
     return `${API_BASE}/api/v1/exports/pdf/${projectId}`
   },
+  screenplayUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/screenplay/${projectId}`
+  },
+  castUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/cast/${projectId}`
+  },
+  locationsUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/locations/${projectId}`
+  },
+  vfxUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/vfx/${projectId}`
+  },
+  moodBoardUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/mood-board/${projectId}`
+  },
+  zipUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/zip/${projectId}`
+  },
 }
 
 export function mediaUrl(path: string): string {
