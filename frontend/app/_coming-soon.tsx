@@ -10,7 +10,7 @@ interface Props {
 
 export default function ComingSoon({ title, description }: Props) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black flex flex-col">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black flex flex-col">
       <header className="border-b border-gray-800/60 backdrop-blur-sm bg-gray-900/80">
         <div className="container mx-auto px-4 py-4 flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2 group">
@@ -24,7 +24,7 @@ export default function ComingSoon({ title, description }: Props) {
         <div className="mb-6 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
           <SparklesIcon className="h-10 w-10 text-purple-400" />
         </div>
-        <h1 className="text-3xl font-bold text-white mb-3">{title}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">{title}</h1>
         <p className="text-gray-400 max-w-md mb-8">{description}</p>
         <div className="flex gap-3">
           <Link

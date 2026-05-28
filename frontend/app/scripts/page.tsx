@@ -33,12 +33,12 @@ function ScriptsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Scripts</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Scripts</h1>
             <p className="text-gray-400">AI-generated screenplays from your film projects</p>
           </div>
 

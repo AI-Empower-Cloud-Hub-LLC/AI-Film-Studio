@@ -58,7 +58,7 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-purple-400 border-t-transparent rounded-full" />
       </div>
     )
@@ -66,7 +66,7 @@ export default function ProjectDetail() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400 mb-4">Project not found</p>
           <Link href="/projects" className="text-purple-400 hover:text-purple-300">Back to Projects</Link>
@@ -83,7 +83,7 @@ export default function ProjectDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">

@@ -31,41 +31,41 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black flex items-center justify-center px-4">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 group">
             <FilmIcon className="h-8 w-8 text-purple-400 group-hover:text-purple-300 transition-colors" />
-            <span className="text-2xl font-bold text-white">AI Film Studio</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">AI Film Studio</span>
           </Link>
-          <h2 className="mt-4 text-xl text-gray-400">Sign in to your account</h2>
+          <h2 className="mt-4 text-xl text-gray-500 dark:text-gray-400">Sign in to your account</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50 rounded-2xl p-8 space-y-5 shadow-sm dark:shadow-none">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-colors"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-colors"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-colors"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-colors"
               placeholder="••••••••"
             />
           </div>
@@ -78,7 +78,7 @@ export default function LoginPage() {
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
 
-          <p className="text-center text-sm text-gray-400">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="text-purple-400 hover:text-purple-300 font-medium">
               Create one
