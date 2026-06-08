@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "mistral"
     CLAUDE_MODEL: str = "claude-sonnet-4-20250514"
 
+    # Orchestrator backend: "langgraph" (default) or "autogen"
+    ORCHESTRATOR_BACKEND: str = "langgraph"
+
     # AI Services
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""

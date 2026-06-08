@@ -12,6 +12,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.orchestrator import AgentOrchestrator
+from app.agents.autogen_orchestrator import AutoGenOrchestrator
+from app.core.config import settings
 from app.database import get_db
 from app.models.project import Project, Scene, Script, ProjectStatus
 from app.services.sanitizer import sanitize_prompt, sanitize_title
@@ -22,15 +24,21 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Cache of orchestrators keyed by model name — avoids re-creating on every request
-# while still honouring per-request model selection.
-_orchestrators: Dict[str, AgentOrchestrator] = {}
+# Cache of orchestrators keyed by (backend, model) — avoids re-creating on every
+# request while still honouring per-request model selection and backend choice.
+_orchestrators: Dict[str, Any] = {}
 
 
-def _get_orchestrator(model: str = "default") -> AgentOrchestrator:
-    if model not in _orchestrators:
-        _orchestrators[model] = AgentOrchestrator()
-    return _orchestrators[model]
+def _get_orchestrator(model: str = "default"):
+    """Return the configured orchestrator (LangGraph or AutoGen)."""
+    backend = settings.ORCHESTRATOR_BACKEND.lower()
+    cache_key = f"{backend}:{model}"
+    if cache_key not in _orchestrators:
+        if backend == "autogen":
+            _orchestrators[cache_key] = AutoGenOrchestrator()
+        else:
+            _orchestrators[cache_key] = AgentOrchestrator()
+    return _orchestrators[cache_key]
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +340,7 @@ def get_agent_status():
     return {
         "status": "active",
         "agents_count": 10,
+        "orchestrator_backend": settings.ORCHESTRATOR_BACKEND,
         "agents": [
             "Director", "Screenwriter", "ScreenplayRefinement",
             "Cinematographer", "SoundDesigner", "CastSelection",
@@ -347,9 +356,22 @@ def get_agent_status():
 
 @router.get("/graph")
 def get_graph_structure():
-    """Return the LangGraph pipeline topology for visualization."""
+    """Return the pipeline topology for visualization."""
     orchestrator = _get_orchestrator("default")
     return orchestrator.get_graph_structure()
+
+
+@router.get("/orchestrator-info")
+def orchestrator_info():
+    """Return current orchestrator backend and available options."""
+    return {
+        "current_backend": settings.ORCHESTRATOR_BACKEND,
+        "available_backends": ["langgraph", "autogen"],
+        "description": {
+            "langgraph": "LangGraph StateGraph — graph-based agent orchestration with checkpointing",
+            "autogen": "Microsoft AutoGen — multi-agent framework with parallel execution",
+        },
+    }
 
 
 @router.get("/pipeline-history")
