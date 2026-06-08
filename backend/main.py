@@ -56,9 +56,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     print(f"Starting {settings.APP_NAME}...")
-    if settings.DEBUG:
-        # Dev/test convenience — production schema is managed by Alembic migrations.
-        create_tables()
+    # Create tables if they don't exist (idempotent — safe for production).
+    # In a mature workflow Alembic migrations handle schema changes, but
+    # create_all() ensures the initial schema is always present.
+    create_tables()
     yield
     # Shutdown
     print("Shutting down AI Film Studio...")
@@ -69,8 +70,8 @@ app = FastAPI(
     description="AI-powered end-to-end video production platform",
     version=settings.API_VERSION,
     lifespan=lifespan,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # Rate limiter
