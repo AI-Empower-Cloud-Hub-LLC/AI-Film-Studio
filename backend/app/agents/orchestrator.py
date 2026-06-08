@@ -101,30 +101,37 @@ class AgentOrchestrator:
         
         Args:
             llm: LLMService instance (preferred)
-            model: Deprecated parameter for backward compatibility
-            anthropic_api_key: Deprecated parameter for backward compatibility
+            model: Model name for backward compatibility
+            anthropic_api_key: Anthropic API key for backward compatibility
         """
         self._llm = llm or llm_service
-        self.director = DirectorAgent(llm=self._llm)
-        self.screenwriter = ScreenwriterAgent(llm=self._llm)
-        self.screenplay_refinement = ScreenplayRefinementAgent(llm=self._llm)
-        self.cinematographer = CinematographerAgent(llm=self._llm)
-        self.sound_designer = SoundDesignerAgent(llm=self._llm)
-        self.cast_selection = CastSelectionAgent(llm=self._llm)
-        self.location_research = LocationResearchAgent(llm=self._llm)
-        self.vfx_planning = VFXPlanningAgent(llm=self._llm)
-        self.mood_board = MoodBoardAgent(llm=self._llm)
-        self.editor = EditorAgent(llm=self._llm)
+        # Use model and anthropic_api_key for all agents to match their constructors
+        self.director = DirectorAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.screenwriter = ScreenwriterAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.screenplay_refinement = ScreenplayRefinementAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.cinematographer = CinematographerAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.sound_designer = SoundDesignerAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.cast_selection = CastSelectionAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.location_research = LocationResearchAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.vfx_planning = VFXPlanningAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.mood_board = MoodBoardAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
+        self.editor = EditorAgent(model=model or "claude-opus-4-6", anthropic_api_key=anthropic_api_key)
         self._checkpointer = MemorySaver()
         self._run_history: List[Dict[str, Any]] = []
+        backend_name = getattr(self._llm, 'backend', 'unknown')
         logger.info(
             "Agent Orchestrator initialised with 10 agents "
-            "(LangGraph advanced, backend=%s)", self._llm.backend,
+            "(LangGraph advanced, backend=%s)", backend_name,
         )
 
     @classmethod
     def from_settings(cls) -> "AgentOrchestrator":
-        return cls(llm=llm_service)
+        """Create orchestrator from app settings."""
+        from app.core.config import settings
+        return cls(
+            model="claude-opus-4-6",
+            anthropic_api_key=settings.ANTHROPIC_API_KEY,
+        )
 
     # ------------------------------------------------------------------
     # Public API
