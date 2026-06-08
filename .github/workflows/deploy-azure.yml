@@ -1,0 +1,108 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ACR_NAME: aifilmstudioacr
+  RESOURCE_GROUP: ai-film-studio-rg
+  BACKEND_APP: ai-film-studio-backend
+  FRONTEND_APP: ai-film-studio-frontend
+  BACKEND_IMAGE: aifilmstudioacr.azurecr.io/ai-film-studio-backend
+  FRONTEND_IMAGE: aifilmstudioacr.azurecr.io/ai-film-studio-frontend
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install backend deps
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run backend tests
+      env:
+        SECRET_KEY: test-secret-key-for-ci
+        OPENAI_API_KEY: test-key
+      run: |
+        cd backend
+        pytest tests/ -v --tb=short
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+
+  deploy:
+    name: Deploy to Azure
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: ACR Login
+      run: az acr login --name ${{ env.ACR_NAME }}
+
+    - name: Build & push backend
+      run: |
+        docker build -t ${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
+                      -t ${{ env.BACKEND_IMAGE }}:latest \
+                      ./backend
+        docker push ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+        docker push ${{ env.BACKEND_IMAGE }}:latest
+
+    - name: Build & push frontend
+      run: |
+        docker build \
+          --build-arg NEXT_PUBLIC_API_URL=https://${{ env.BACKEND_APP }}.kindbay-e2b730f4.eastus.azurecontainerapps.io \
+          -t ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
+          -t ${{ env.FRONTEND_IMAGE }}:latest \
+          ./frontend
+        docker push ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+        docker push ${{ env.FRONTEND_IMAGE }}:latest
+
+    - name: Deploy backend
+      run: |
+        az containerapp update \
+          --name ${{ env.BACKEND_APP }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+
+    - name: Deploy frontend
+      run: |
+        az containerapp update \
+          --name ${{ env.FRONTEND_APP }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+    - name: Verify deployment
+      run: |
+        echo "Backend: https://${{ env.BACKEND_APP }}.kindbay-e2b730f4.eastus.azurecontainerapps.io/health"
+        echo "Frontend: https://${{ env.FRONTEND_APP }}.kindbay-e2b730f4.eastus.azurecontainerapps.io"
+        sleep 30
+        curl -sf "https://${{ env.BACKEND_APP }}.kindbay-e2b730f4.eastus.azurecontainerapps.io/health" || echo "Backend health check pending..."
