@@ -14,6 +14,10 @@ from app.api.v1.endpoints import (
     media,
     exports,
     attachments,
+    teams,
+    payments,
+    analytics,
+    cdn,
 )
 from app.api.routes import autonomous
 
@@ -40,3 +44,15 @@ api_router.include_router(voiceovers.router, prefix="/voiceovers", tags=["Voiceo
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
 api_router.include_router(exports.router, prefix="/exports", tags=["Exports"])
 api_router.include_router(attachments.router, prefix="/attachments", tags=["Attachments"])
+
+# Team collaboration
+api_router.include_router(teams.router, prefix="/teams", tags=["Teams"])
+
+# Payments & subscriptions
+api_router.include_router(payments.router, prefix="/payments", tags=["Payments"])
+
+# Analytics
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+
+# CDN / Media storage
+api_router.include_router(cdn.router, prefix="/cdn", tags=["CDN"])

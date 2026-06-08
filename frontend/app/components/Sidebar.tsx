@@ -26,6 +26,10 @@ import {
   MoonIcon,
   UserIcon,
   DocumentTextIcon as DocIcon,
+  PlayIcon,
+  CreditCardIcon,
+  ChartPieIcon,
+  CloudIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -33,6 +37,7 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: HomeIcon },
   { href: '/projects', label: 'Projects', icon: FilmIcon },
   { href: '/create', label: 'Create Film', icon: PlusCircleIcon },
+  { href: '/video-preview', label: 'Video Preview', icon: PlayIcon },
   { href: '/scripts', label: 'Scripts', icon: DocumentTextIcon },
   { href: '/screenplay', label: 'Screenplay', icon: PencilSquareIcon },
   { href: '/cast', label: 'Cast', icon: UserGroupIcon },
@@ -42,6 +47,9 @@ const NAV = [
   { href: '/vfx-plan', label: 'VFX Plan', icon: SparklesIcon },
   { href: '/scenes', label: 'Scenes', icon: VideoCameraIcon },
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
+  { href: '/teams', label: 'Teams', icon: UserGroupIcon },
+  { href: '/analytics', label: 'Analytics', icon: ChartPieIcon },
+  { href: '/pricing', label: 'Pricing', icon: CreditCardIcon },
   { href: '/admin', label: 'Admin', icon: ChartBarIcon },
   { href: '/profile', label: 'Profile', icon: UserIcon },
   { href: '/terms', label: 'Legal', icon: DocIcon },

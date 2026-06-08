@@ -375,3 +375,124 @@ export const attachmentsApi = {
     })
   },
 }
+
+// Team Collaboration API
+export interface TeamInfo {
+  id: string
+  name: string
+  description: string | null
+  owner_id: string
+  member_count: number
+  created_at: string
+}
+
+export interface TeamMember {
+  id: string
+  user_id: string
+  email: string
+  full_name: string
+  role: string
+  joined_at: string
+}
+
+export const teamsApi = {
+  list() {
+    return apiFetch<TeamInfo[]>('/teams/', { auth: true })
+  },
+  create(name: string, description?: string) {
+    return apiFetch<{ id: string; name: string; message: string }>('/teams/', {
+      method: 'POST', auth: true,
+      body: JSON.stringify({ name, description }),
+    })
+  },
+  get(teamId: string) {
+    return apiFetch<{ id: string; name: string; description: string; owner_id: string; members: TeamMember[]; shared_projects: { id: string; project_id: string }[]; created_at: string }>(`/teams/${teamId}`, { auth: true })
+  },
+  delete(teamId: string) {
+    return apiFetch<void>(`/teams/${teamId}`, { method: 'DELETE', auth: true })
+  },
+  invite(teamId: string, email: string, role = 'viewer') {
+    return apiFetch<{ id: string; message: string }>(`/teams/${teamId}/invite`, {
+      method: 'POST', auth: true,
+      body: JSON.stringify({ email, role }),
+    })
+  },
+  listInvites(teamId: string) {
+    return apiFetch<{ id: string; email: string; role: string; status: string }[]>(`/teams/${teamId}/invites`, { auth: true })
+  },
+  acceptInvite(inviteId: string) {
+    return apiFetch<{ message: string }>(`/teams/invites/${inviteId}/accept`, { method: 'POST', auth: true })
+  },
+  shareProject(teamId: string, projectId: string) {
+    return apiFetch<{ id: string; message: string }>(`/teams/${teamId}/share`, {
+      method: 'POST', auth: true,
+      body: JSON.stringify({ project_id: projectId }),
+    })
+  },
+  removeMember(teamId: string, memberId: string) {
+    return apiFetch<void>(`/teams/${teamId}/members/${memberId}`, { method: 'DELETE', auth: true })
+  },
+}
+
+// Payments API
+export interface PlanInfo {
+  id: string
+  name: string
+  price: number
+  films_limit: number
+  features: string[]
+}
+
+export interface SubscriptionInfo {
+  plan: string
+  films_limit: number
+  films_used: number
+  is_active: boolean
+  current_period_end: string | null
+  stripe_configured: boolean
+}
+
+export const paymentsApi = {
+  plans() {
+    return apiFetch<PlanInfo[]>('/payments/plans')
+  },
+  subscription() {
+    return apiFetch<SubscriptionInfo>('/payments/subscription', { auth: true })
+  },
+  checkout(plan: string) {
+    return apiFetch<{ checkout_url?: string; session_id?: string; message?: string; plan?: string; demo_mode?: boolean }>('/payments/checkout', {
+      method: 'POST', auth: true,
+      body: JSON.stringify({ plan }),
+    })
+  },
+  history() {
+    return apiFetch<{ id: string; amount: number; currency: string; status: string; description: string; created_at: string }[]>('/payments/history', { auth: true })
+  },
+}
+
+// Analytics API
+export const analyticsApi = {
+  overview() {
+    return apiFetch<{
+      total_users: number; total_projects: number; completed_projects: number;
+      total_scenes: number; recent_7d: { projects: number; users: number };
+      monthly_projects: number; completion_rate: number; avg_scenes_per_film: number;
+    }>('/analytics/overview', { auth: true })
+  },
+  trends(days = 30) {
+    return apiFetch<{ days: number; data: { date: string; films: number; users: number }[] }>(`/analytics/trends?days=${days}`, { auth: true })
+  },
+  topStyles() {
+    return apiFetch<{ style: string; count: number }[]>('/analytics/top-styles', { auth: true })
+  },
+  userActivity() {
+    return apiFetch<{ id: string; email: string; full_name: string; projects: number; joined: string; is_admin: boolean }[]>('/analytics/user-activity', { auth: true })
+  },
+}
+
+// CDN API
+export const cdnApi = {
+  status() {
+    return apiFetch<{ azure_blob_configured: boolean; cdn_base_url: string | null; container: string; fallback: string }>('/cdn/status')
+  },
+}

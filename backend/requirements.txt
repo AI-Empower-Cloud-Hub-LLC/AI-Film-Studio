@@ -51,6 +51,9 @@ sentry-sdk[fastapi]>=1.40.0
 # Input Sanitization
 bleach>=6.1.0
 
+# Payments
+stripe>=7.0.0
+
 # Text-to-Speech
 gTTS>=2.5.0
 
@@ -58,13 +61,13 @@ gTTS>=2.5.0
 reportlab>=4.0
 
 # AI/ML Prompt Optimization
-langchain-core>=0.1.0
-langgraph>=0.2.0
+langchain-core>=0.1.0,<2.0.0
+langgraph>=0.2.0,<2.0.0
 google-generativeai>=0.5.0
 
 # AutoGen (alternative orchestration framework)
-autogen-agentchat>=0.4.0
-autogen-ext[openai]>=0.4.0
+autogen-agentchat>=0.4.0,<1.0.0
+autogen-ext[openai]>=0.4.0,<1.0.0
 
 # WebSocket
 websockets>=12.0
