@@ -1,28 +1,51 @@
 """
-Cast Selection Agent — Generate character descriptions, casting suggestions, and budget estimates.
+Cast Selection Agent - Identifies characters and generates casting suggestions
+
+Generates:
+- Character descriptions and archetypes
+- Casting suggestions and budget estimates
+- Wardrobe and appearance details
+- Image prompts for character reference generation
 """
 import json
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Dict, Any, Optional, List
 
 from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a veteran casting director with deep knowledge of character archetypes,
-physical descriptions, and talent budgeting. You create detailed casting sheets with physical
-descriptions suitable for generating character reference images.
+SYSTEM_PROMPT = """You are a veteran casting director who analyzes scripts and suggests perfect casting.
+You describe characters deeply, estimate budgets, and create detailed character briefs.
 Always respond with valid JSON only."""
 
 
 class CastSelectionAgent(BaseAgent):
     """Generates character descriptions, casting suggestions, and budget estimates."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
-        super().__init__(name="CastSelection", llm=llm)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = "", llm: Optional[LLMService] = None):
+        """Initialize with model/API key (preferred) or LLMService instance.
+        
+        Args:
+            model: LLM model name (default: claude-opus-4-6)
+            anthropic_api_key: Anthropic API key if needed
+            llm: Optional LLMService instance (overrides model/key if provided)
+        """
+        super().__init__(name="CastSelection", model=model, anthropic_api_key=anthropic_api_key, llm=llm)
+
+    @classmethod
+    def from_settings(cls, **kwargs):
+        """Create instance from app settings."""
+        from app.core.config import settings
+        return cls(
+            model=kwargs.get("model", "claude-opus-4-6"),
+            anthropic_api_key=settings.ANTHROPIC_API_KEY,
+            llm=kwargs.get("llm"),
+        )
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze script and generate character casting sheet."""
         script_scenes = input_data.get("script_scenes", [])
         vision = input_data.get("vision", "")
         style = input_data.get("style", "cinematic")
@@ -43,6 +66,7 @@ class CastSelectionAgent(BaseAgent):
     async def _identify_characters(
         self, script_scenes: List[Dict[str, Any]], vision: str, style: str
     ) -> List[Dict[str, Any]]:
+        """Identify unique characters from script scenes."""
         dialogue_summary = []
         for sc in script_scenes:
             for d in sc.get("dialogue", []):
@@ -66,7 +90,7 @@ class CastSelectionAgent(BaseAgent):
             "- estimated_budget (string, simulated salary range e.g. '$50,000 - $80,000')\n"
             "- notes (string, casting notes)"
         )
-        raw = await self._ask_llm(user_msg, SYSTEM_PROMPT, max_tokens=2048)
+        raw = await self._ask_claude(user_msg, SYSTEM_PROMPT, max_tokens=2048)
         try:
             start, end = raw.find("["), raw.rfind("]") + 1
             return json.loads(raw[start:end])
@@ -90,20 +114,22 @@ class CastSelectionAgent(BaseAgent):
 
     @staticmethod
     def _build_casting_sheet(characters: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Build a casting summary sheet."""
         total_budget_low = 0
         total_budget_high = 0
-        for ch in characters:
-            budget_str = ch.get("estimated_budget", "$0 - $0")
-            parts = budget_str.replace("$", "").replace(",", "").split("-")
+        
+        for char in characters:
+            budget_str = char.get("estimated_budget", "$0 - $0")
             try:
-                total_budget_low += int(parts[0].strip())
-                total_budget_high += int(parts[1].strip()) if len(parts) > 1 else int(parts[0].strip())
-            except (ValueError, IndexError):
+                low, high = budget_str.replace("$", "").replace(",", "").split("-")
+                total_budget_low += int(low.strip())
+                total_budget_high += int(high.strip())
+            except Exception:
                 pass
+
         return {
             "total_characters": len(characters),
-            "leads": sum(1 for c in characters if c.get("role") == "lead"),
-            "supporting": sum(1 for c in characters if c.get("role") == "supporting"),
-            "extras": sum(1 for c in characters if c.get("role") == "extra"),
+            "lead_count": sum(1 for c in characters if c.get("role") == "lead"),
+            "supporting_count": sum(1 for c in characters if c.get("role") == "supporting"),
             "estimated_total_budget": f"${total_budget_low:,} - ${total_budget_high:,}",
         }

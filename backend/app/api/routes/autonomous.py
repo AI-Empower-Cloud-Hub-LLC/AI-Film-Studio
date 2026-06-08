@@ -121,8 +121,9 @@ def _persist_project(
 @router.post("/create-film", response_model=FilmResponse)
 async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get_db)):
     """
-    Orchestrate the full autonomous film pipeline:
-    Director -> Screenwriter -> Cinematographer -> Sound Designer -> Editor
+    Orchestrate the full autonomous film pipeline with 10 agents:
+    Director → Screenwriter → ScreenplayRefinement → [parallel: Cinematographer, SoundDesigner, 
+    CastSelection, LocationResearch] → [parallel: VFXPlanning, MoodBoard] → Editor → Review
     """
     from app.services.ws_manager import ws_manager
 
@@ -173,11 +174,18 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "total_duration": sum(s.get("duration", 0) for s in scenes),
             "director": director_out,
             "script": result.get("script", {}),
+            "refined_screenplay": result.get("refined_screenplay", {}),
             "cinematography": result.get("cinematography", {}),
             "sound": result.get("sound", {}),
+            "cast": result.get("cast", {}),
+            "locations": result.get("locations", {}),
+            "vfx_plan": result.get("vfx_plan", {}),
+            "mood_board": result.get("mood_board", {}),
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
+            "node_timings": result.get("node_timings", {}),
+            "revision_count": result.get("revision_count", 0),
         },
     )
 

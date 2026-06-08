@@ -1,29 +1,53 @@
 """
-VFX Planning Agent — Identify VFX shots, suggest techniques, and plan budgets.
+VFX Planning Agent - Identifies VFX shots and technical requirements
+
+Analyzes scenes for:
+- VFX shot identification
+- Techniques (CGI, compositing, rotoscoping, etc.)
+- Complexity assessment
+- Render time and cost estimates
+- Recommended VFX software
 """
 import json
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Dict, Any, Optional, List
 
 from app.services.llm_service import LLMService
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a VFX supervisor with experience on blockbuster productions.
-You identify which shots need visual effects, suggest appropriate techniques
-(CGI, compositing, particle effects, matte painting, motion capture, etc.),
-estimate complexity and budget per shot.
+SYSTEM_PROMPT = """You are an expert VFX supervisor who analyzes scripts for effects requirements.
+You identify which shots need VFX, suggest techniques, estimate complexity and budget.
+You recommend industry-standard software and provide technical notes.
 Always respond with valid JSON only."""
 
 
 class VFXPlanningAgent(BaseAgent):
     """Identifies VFX shots, suggests techniques, and plans budgets."""
 
-    def __init__(self, llm: Optional[LLMService] = None):
-        super().__init__(name="VFXPlanning", llm=llm)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = "", llm: Optional[LLMService] = None):
+        """Initialize with model/API key (preferred) or LLMService instance.
+        
+        Args:
+            model: LLM model name (default: claude-opus-4-6)
+            anthropic_api_key: Anthropic API key if needed
+            llm: Optional LLMService instance (overrides model/key if provided)
+        """
+        super().__init__(name="VFXPlanning", model=model, anthropic_api_key=anthropic_api_key, llm=llm)
+
+    @classmethod
+    def from_settings(cls, **kwargs):
+        """Create instance from app settings."""
+        from app.core.config import settings
+        return cls(
+            model=kwargs.get("model", "claude-opus-4-6"),
+            anthropic_api_key=settings.ANTHROPIC_API_KEY,
+            llm=kwargs.get("llm"),
+        )
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze scenes and plan VFX requirements."""
         scenes = input_data.get("scenes", [])
         shot_plans = input_data.get("shot_plans", [])
         vision = input_data.get("vision", "")
@@ -49,8 +73,9 @@ class VFXPlanningAgent(BaseAgent):
         vision: str,
         style: str,
     ) -> List[Dict[str, Any]]:
+        """Analyze which scenes need VFX and plan technical approach."""
         scene_descs = "; ".join(
-            f"Scene {s.get('scene_number')}: {s.get('description', '')} (mood: {s.get('mood', '')})"
+            f"Scene {s.get('scene_number')}: {s.get('description', '')} (mood: {s.get('mood', '')})" 
             for s in scenes
         )
         user_msg = (
@@ -68,7 +93,7 @@ class VFXPlanningAgent(BaseAgent):
             "- notes (string)\n"
             "Include ALL scenes, even those with vfx_needed=false."
         )
-        raw = await self._ask_llm(user_msg, SYSTEM_PROMPT, max_tokens=2048)
+        raw = await self._ask_claude(user_msg, SYSTEM_PROMPT, max_tokens=2048)
         try:
             start, end = raw.find("["), raw.rfind("]") + 1
             return json.loads(raw[start:end])
@@ -91,23 +116,28 @@ class VFXPlanningAgent(BaseAgent):
 
     @staticmethod
     def _build_summary(vfx_shots: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Build VFX summary with budget and timeline."""
+        vfx_needed_count = sum(1 for v in vfx_shots if v.get("vfx_needed"))
         total_cost = 0
-        for shot in vfx_shots:
-            cost_str = shot.get("estimated_cost", "$0")
+        total_render_hours = 0
+        
+        for vfx in vfx_shots:
+            cost_str = vfx.get("estimated_cost", "$0").replace("$", "").replace(",", "")
             try:
-                num = int(cost_str.replace("$", "").replace(",", "").strip())
-                total_cost += num
-            except (ValueError, IndexError):
+                total_cost += int(cost_str)
+            except Exception:
                 pass
-        vfx_needed = [s for s in vfx_shots if s.get("vfx_needed")]
+            
+            render_str = vfx.get("render_time_estimate", "0").split("-")[0].replace("hours", "").strip()
+            try:
+                total_render_hours += int(render_str)
+            except Exception:
+                pass
+
         return {
-            "total_scenes": len(vfx_shots),
-            "scenes_with_vfx": len(vfx_needed),
-            "complexity_breakdown": {
-                "low": sum(1 for s in vfx_needed if s.get("complexity") == "low"),
-                "medium": sum(1 for s in vfx_needed if s.get("complexity") == "medium"),
-                "high": sum(1 for s in vfx_needed if s.get("complexity") == "high"),
-                "extreme": sum(1 for s in vfx_needed if s.get("complexity") == "extreme"),
-            },
-            "estimated_total_cost": f"${total_cost:,}",
+            "total_shots": len(vfx_shots),
+            "shots_requiring_vfx": vfx_needed_count,
+            "estimated_total_budget": f"${total_cost:,}",
+            "estimated_render_time": f"{total_render_hours} hours",
+            "vfx_complexity": "high" if vfx_needed_count > len(vfx_shots) // 2 else "medium",
         }
