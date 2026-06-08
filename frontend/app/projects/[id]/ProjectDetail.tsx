@@ -186,6 +186,14 @@ export default function ProjectDetail() {
             >
               <FolderArrowDownIcon className="h-4 w-4" /> Download All
             </a>
+            <a
+              href={exportsApi.imagesUrl(project.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg text-green-400 text-xs font-medium hover:bg-green-600/30 transition-colors"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" /> Images ZIP
+            </a>
           </div>
         </div>
 

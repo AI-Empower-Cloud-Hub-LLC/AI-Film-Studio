@@ -44,6 +44,25 @@ async def generate_image(req: ImageGenerateRequest):
     return result
 
 
+class BatchImageRequest(BaseModel):
+    prompts: list[dict] = Field(..., min_length=1)
+
+
+@router.post("/generate-images-batch")
+async def generate_images_batch(req: BatchImageRequest):
+    """Generate images for multiple prompts in sequence."""
+    results = []
+    for item in req.prompts:
+        result = await image_generator.generate(
+            prompt=item.get("prompt", ""),
+            category=item.get("category", "storyboard"),
+            width=item.get("width", 512),
+            height=item.get("height", 512),
+        )
+        results.append(result)
+    return {"results": results, "total": len(results)}
+
+
 @router.post("/generate-tts")
 async def generate_tts(req: TTSRequest):
     result = await audio_generator.generate_voiceover(
@@ -52,6 +71,17 @@ async def generate_tts(req: TTSRequest):
         pace=req.pace,
     )
     return result
+
+
+class BatchTTSRequest(BaseModel):
+    items: list[dict] = Field(..., min_length=1)
+
+
+@router.post("/generate-tts-batch")
+async def generate_tts_batch(req: BatchTTSRequest):
+    """Generate voiceovers for multiple texts in sequence."""
+    results = await audio_generator.generate_batch(req.items)
+    return {"results": results, "total": len(results)}
 
 
 @router.post("/generate-video")
