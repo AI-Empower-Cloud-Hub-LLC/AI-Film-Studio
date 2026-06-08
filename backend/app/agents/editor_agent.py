@@ -1,7 +1,8 @@
 """
 Editor Agent - Video Assembly & Post-Production
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from app.services.llm_service import LLMService
 import logging
 from .base_agent import BaseAgent
 
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 class EditorAgent(BaseAgent):
     """Editor agent for video assembly and post-production"""
 
-    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
-        super().__init__(name="Editor", model=model, anthropic_api_key=anthropic_api_key)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = "", llm: Optional[LLMService] = None):
+        super().__init__(name="Editor", model=model, anthropic_api_key=anthropic_api_key, llm=llm)
         self.transitions = ["fade", "cut", "dissolve", "wipe"]
     
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:

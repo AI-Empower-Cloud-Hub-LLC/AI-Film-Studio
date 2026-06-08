@@ -2,7 +2,8 @@
 Sound Designer Agent - Audio Landscape Planning
 """
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from app.services.llm_service import LLMService
 import logging
 from .base_agent import BaseAgent
 
@@ -17,8 +18,8 @@ Always respond with valid JSON only."""
 class SoundDesignerAgent(BaseAgent):
     """Plans the complete audio landscape: music, SFX, and voiceover guidance."""
 
-    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
-        super().__init__(name="SoundDesigner", model=model, anthropic_api_key=anthropic_api_key)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = "", llm: Optional[LLMService] = None):
+        super().__init__(name="SoundDesigner", model=model, anthropic_api_key=anthropic_api_key, llm=llm)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         script_scenes = input_data.get("script_scenes", [])

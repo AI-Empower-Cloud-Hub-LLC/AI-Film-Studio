@@ -20,7 +20,7 @@ function ScriptsContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadScript = async (id: string) => {
@@ -33,12 +33,12 @@ function ScriptsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Scripts</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Scripts</h1>
             <p className="text-gray-400">AI-generated screenplays from your film projects</p>
           </div>
 
@@ -73,10 +73,10 @@ function ScriptsContent() {
                     className={`w-full text-left p-4 rounded-xl border transition-all ${
                       selected?.id === p.id
                         ? 'bg-purple-500/10 border-purple-500/30'
-                        : 'bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/70'
+                        : 'bg-white dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/50 hover:bg-gray-800/70'
                     }`}
                   >
-                    <h3 className="text-sm font-medium text-white truncate">{p.title}</h3>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.title}</h3>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <SparklesIcon className="h-3 w-3" /> {p.style}
@@ -92,12 +92,12 @@ function ScriptsContent() {
               {/* Script Viewer */}
               <div className="lg:col-span-2">
                 {selected ? (
-                  <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
-                    <h2 className="text-xl font-bold text-white mb-4">{selected.title}</h2>
+                  <div className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-6">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{selected.title}</h2>
                     {selected.director_vision && (
                       <div className="mb-6 p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg">
                         <h3 className="text-sm font-semibold text-purple-400 mb-2">Director&apos;s Vision</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">{selected.director_vision}</p>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{selected.director_vision}</p>
                       </div>
                     )}
                     <div className="space-y-4">
@@ -109,7 +109,7 @@ function ScriptsContent() {
                             </span>
                             <span className="text-xs text-gray-500">{scene.shot_type} | {scene.mood} | {scene.duration}s</span>
                           </div>
-                          <p className="text-sm text-gray-300 mb-2">{scene.description}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{scene.description}</p>
                           {scene.narration && (
                             <p className="text-sm text-gray-400 italic border-l-2 border-purple-500/50 pl-3">
                               {scene.narration}

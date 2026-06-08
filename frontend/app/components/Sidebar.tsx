@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -15,6 +16,16 @@ import {
   ArrowRightStartOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
+  PencilSquareIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  SwatchIcon,
+  SparklesIcon,
+  ChartBarIcon,
+  SunIcon,
+  MoonIcon,
+  UserIcon,
+  DocumentTextIcon as DocIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../lib/auth-store'
 
@@ -23,10 +34,34 @@ const NAV = [
   { href: '/projects', label: 'Projects', icon: FilmIcon },
   { href: '/create', label: 'Create Film', icon: PlusCircleIcon },
   { href: '/scripts', label: 'Scripts', icon: DocumentTextIcon },
+  { href: '/screenplay', label: 'Screenplay', icon: PencilSquareIcon },
+  { href: '/cast', label: 'Cast', icon: UserGroupIcon },
+  { href: '/locations', label: 'Locations', icon: MapPinIcon },
   { href: '/storyboards', label: 'Storyboards', icon: PhotoIcon },
+  { href: '/mood-board', label: 'Mood Board', icon: SwatchIcon },
+  { href: '/vfx-plan', label: 'VFX Plan', icon: SparklesIcon },
   { href: '/scenes', label: 'Scenes', icon: VideoCameraIcon },
   { href: '/voiceovers', label: 'Voiceovers', icon: MicrophoneIcon },
+  { href: '/admin', label: 'Admin', icon: ChartBarIcon },
+  { href: '/profile', label: 'Profile', icon: UserIcon },
+  { href: '/terms', label: 'Legal', icon: DocIcon },
 ]
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/60 transition-colors"
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+    >
+      {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+    </button>
+  )
+}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
@@ -36,13 +71,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-800/60">
+      <div className="px-5 py-5 border-b border-gray-200 dark:border-gray-800/60">
         <Link href="/" className="flex items-center gap-2 group" onClick={onNavigate}>
           <div className="relative">
             <FilmIcon className="h-7 w-7 text-purple-400 group-hover:text-purple-300 transition-colors" />
             <div className="absolute inset-0 blur-lg bg-purple-400/40 group-hover:bg-purple-300/40 transition-all" />
           </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
             AI Film Studio
           </span>
         </Link>
@@ -59,8 +94,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 active
-                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60'
               }`}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
@@ -70,21 +105,24 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      {/* Agent Status */}
-      <div className="px-4 py-3 border-t border-gray-800/60">
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-          <CpuChipIcon className="h-4 w-4" />
-          <span>5 AI Agents Active</span>
+      {/* Agent Status & Theme Toggle */}
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800/60">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+            <CpuChipIcon className="h-4 w-4" />
+            <span>10 AI Agents Active</span>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 
       {/* User section */}
       {user && (
-        <div className="px-4 py-3 border-t border-gray-800/60">
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800/60">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.full_name || user.username}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.full_name || user.username}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 truncate">{user.email}</p>
             </div>
             <button
               onClick={logout}
@@ -108,14 +146,14 @@ export default function Sidebar() {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-30 p-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-white lg:hidden"
+        className="fixed top-4 left-4 z-30 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white lg:hidden"
         aria-label="Open menu"
       >
         <Bars3Icon className="h-6 w-6" />
       </button>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-gray-900 border-r border-gray-800/60 flex-col z-20">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800/60 flex-col z-20">
         <SidebarContent />
       </aside>
 
@@ -126,10 +164,10 @@ export default function Sidebar() {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 w-64 bg-gray-900 border-r border-gray-800/60 flex flex-col z-50">
+          <aside className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800/60 flex flex-col z-50">
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-white"
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-900 dark:hover:text-white"
               aria-label="Close menu"
             >
               <XMarkIcon className="h-5 w-5" />

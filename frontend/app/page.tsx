@@ -45,7 +45,7 @@ export default function Home() {
   ]
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black relative overflow-hidden">
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
@@ -60,7 +60,7 @@ export default function Home() {
               <FilmIcon className="h-8 w-8 text-purple-400 group-hover:text-purple-300 transition-colors" />
               <div className="absolute inset-0 blur-lg bg-purple-400/50 group-hover:bg-purple-300/50 transition-all"></div>
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
               AI Film Studio
             </h1>
           </div>
@@ -87,11 +87,11 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-purple-500/10 border border-purple-500/20 rounded-full backdrop-blur-sm">
             <SparklesIcon className="h-4 w-4 text-purple-400" />
-            <span className="text-sm text-purple-300">Powered by cutting-edge AI</span>
+            <span className="text-sm text-purple-500 dark:text-purple-300">Powered by cutting-edge AI</span>
           </div>
           
           <h2 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-600 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
               Create Professional Videos
             </span>
             <br />
@@ -100,7 +100,7 @@ export default function Home() {
             </span>
           </h2>
           
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             From script to screen in minutes. Automate your entire video production 
             workflow with cutting-edge AI technology.
           </p>
@@ -125,10 +125,10 @@ export default function Home() {
           transition={{ delay: 0.3 }}
           className="text-center mb-16"
         >
-          <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-4">
+          <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent mb-4">
             Everything you need to create amazing videos
           </h3>
-          <p className="text-gray-400 text-lg">Powered by the latest AI models and tools</p>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">Powered by the latest AI models and tools</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -144,17 +144,17 @@ export default function Home() {
               <div className={`absolute -inset-0.5 bg-gradient-to-r ${feature.gradient} rounded-2xl blur opacity-0 group-hover:opacity-75 transition duration-500`}></div>
               
               {/* Card */}
-              <div className="relative bg-gray-900/90 backdrop-blur-xl border border-gray-800 rounded-2xl p-8 hover:border-gray-700 transition-all duration-300 h-full">
+              <div className="relative bg-white dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl p-8 hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 h-full shadow-sm dark:shadow-none">
                 {/* Icon with gradient background */}
                 <div className={`inline-flex p-3 mb-6 bg-gradient-to-r ${feature.gradient} rounded-xl shadow-lg`}>
                   <feature.icon className="h-8 w-8 text-white" />
                 </div>
                 
-                <h3 className="text-xl font-bold text-white mb-3 group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 group-hover:bg-clip-text group-hover:text-transparent transition-all">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 transition-all">
                   {feature.name}
                 </h3>
                 
-                <p className="text-gray-400 leading-relaxed mb-6">
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
                   {feature.description}
                 </p>
                 
@@ -174,7 +174,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative container mx-auto px-4 py-12 text-center border-t border-gray-800/50">
+      <footer className="relative container mx-auto px-4 py-12 text-center border-t border-gray-200 dark:border-gray-800/50">
         <p className="text-gray-500">&copy; 2026 AI Film Studio. All rights reserved.</p>
       </footer>
     </main>

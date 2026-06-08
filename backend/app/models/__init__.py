@@ -1,5 +1,5 @@
 from .base import Base, BaseModel
-from .project import Project, Scene, Script, ProjectStatus
+from .project import Project, Scene, Script, ProjectStatus, Attachment
 from .user import User
 
 __all__ = [
@@ -9,5 +9,6 @@ __all__ = [
     "Scene",
     "Script",
     "ProjectStatus",
+    "Attachment",
     "User",
 ]

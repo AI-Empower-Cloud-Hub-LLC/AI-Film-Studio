@@ -6,43 +6,27 @@ routes use a single engine/connection-pool. Adds create_tables() for
 dev/test use only — production schema management is handled by Alembic.
 """
 import logging
-import os
-from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import inspect, text
+from sqlalchemy.orm import Session
 from typing import Generator
 
-from app.models.base import Base
+from app.db.session import engine, SessionLocal, get_db  # noqa: F401 — canonical source
 
 logger = logging.getLogger(__name__)
-
-# Allow DATABASE_URL to be overridden via env; default to local SQLite for development.
-_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ai_film_studio.db")
-
-# SQLite needs check_same_thread=False; the connect_args key is ignored by other drivers.
-_connect_args = {"check_same_thread": False} if _DATABASE_URL.startswith("sqlite") else {}
-
-engine = create_engine(_DATABASE_URL, connect_args=_connect_args, echo=False)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db() -> Generator[Session, None, None]:
-    """Dependency for getting database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def _migrate_missing_columns() -> None:
     """Add any columns declared in the ORM but missing from the DB (SQLite only)."""
-    if not _DATABASE_URL.startswith("sqlite"):
+    from app.core.config import settings
+    db_url = str(settings.DATABASE_URL)
+    if not db_url.startswith("sqlite"):
         return
-    inspector = inspect(engine)
+    from app.models.base import Base
+    insp = inspect(engine)
     for table_name, table in Base.metadata.tables.items():
-        if not inspector.has_table(table_name):
+        if not insp.has_table(table_name):
             continue
-        existing = {col["name"] for col in inspector.get_columns(table_name)}
+        existing = {col["name"] for col in insp.get_columns(table_name)}
         for column in table.columns:
             if column.name not in existing:
                 col_type = column.type.compile(engine.dialect)

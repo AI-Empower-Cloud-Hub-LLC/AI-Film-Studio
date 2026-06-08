@@ -28,7 +28,7 @@ function ScenesContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadScenes = async (id: string) => {
@@ -42,12 +42,12 @@ function ScenesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Scenes</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Scenes</h1>
             <p className="text-gray-400">Visual breakdowns and shot compositions from your films</p>
           </div>
 
@@ -60,7 +60,7 @@ function ScenesContent() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   selectedProject === p.id
                     ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                    : 'bg-gray-800/40 border-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-800/70'
+                    : 'bg-gray-100 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/70'
                 }`}
               >
                 {p.title.slice(0, 40)}
@@ -92,19 +92,19 @@ function ScenesContent() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                    className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                   >
                     {/* Scene header */}
                     <div className={`h-2 bg-gradient-to-r ${gradient}`} />
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-white">Scene {scene.scene_number}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Scene {scene.scene_number}</span>
                         <span className="px-2 py-0.5 bg-gray-700 text-gray-400 text-xs rounded-full">
                           {scene.duration}s
                         </span>
                       </div>
 
-                      <p className="text-sm text-gray-300 mb-3 line-clamp-3">{scene.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-3">{scene.description}</p>
 
                       <div className="flex flex-wrap gap-2 mb-3">
                         <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full">{scene.shot_type}</span>

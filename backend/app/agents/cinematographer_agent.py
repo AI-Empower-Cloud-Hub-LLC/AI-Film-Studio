@@ -2,7 +2,8 @@
 Cinematographer Agent - Visual Composition & Shot Planning
 """
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from app.services.llm_service import LLMService
 import logging
 from .base_agent import BaseAgent
 
@@ -17,8 +18,8 @@ Always respond with valid JSON only."""
 class CinematographerAgent(BaseAgent):
     """Turns scene descriptions into detailed visual/camera specifications."""
 
-    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = ""):
-        super().__init__(name="Cinematographer", model=model, anthropic_api_key=anthropic_api_key)
+    def __init__(self, model: str = "claude-opus-4-6", anthropic_api_key: str = "", llm: Optional[LLMService] = None):
+        super().__init__(name="Cinematographer", model=model, anthropic_api_key=anthropic_api_key, llm=llm)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         scenes = input_data.get("scenes", [])

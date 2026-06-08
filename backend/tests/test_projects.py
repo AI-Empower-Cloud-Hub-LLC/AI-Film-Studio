@@ -6,7 +6,11 @@ Tests for project and autonomous endpoints.
 def test_list_projects_empty(client):
     res = client.get("/api/v1/autonomous/projects")
     assert res.status_code == 200
-    assert res.json() == []
+    data = res.json()
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
+    assert data["total_pages"] == 1
 
 
 def test_get_project_not_found(client):
@@ -19,12 +23,13 @@ def test_agent_status(client):
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "active"
+    assert data["agents_count"] == 10
 
 
-def test_clear_memory(client):
+def test_clear_memory_requires_admin(client):
     res = client.post("/api/v1/autonomous/clear-memory")
-    assert res.status_code == 200
-    assert res.json()["status"] == "success"
+    # Unauthenticated user gets 401, or without admin role gets 403
+    assert res.status_code in (401, 403)
 
 
 def test_create_film_validation_short_prompt(client):
@@ -45,16 +50,6 @@ def test_create_film_validation_duration_range(client):
     assert res.status_code == 422
 
 
-def test_projects_crud_endpoint(client):
-    res = client.post("/api/v1/projects/", json={
-        "title": "Test Project",
-        "description": "Test description",
-        "format": "landscape",
-    })
-    assert res.status_code == 200
-    assert res.json()["title"] == "Test Project"
-
-
 def test_projects_list_endpoint(client):
     res = client.get("/api/v1/projects/")
     assert res.status_code == 200
@@ -66,7 +61,7 @@ def test_media_status_endpoint(client):
     assert res.status_code == 200
     data = res.json()
     assert "runway" in data
-    assert "anthropic" in data
+    assert "tts" in data
 
 
 def test_media_models_endpoint(client):

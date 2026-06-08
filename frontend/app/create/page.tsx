@@ -14,10 +14,15 @@ import Sidebar from '../components/Sidebar'
 import AuthGuard from '../components/AuthGuard'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { projectsApi } from '../../lib/api'
+import { addNotification } from '../components/NotificationToast'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const AGENTS = ['Director', 'Screenwriter', 'Cinematographer', 'SoundDesigner', 'Editor']
+const AGENTS = [
+  'Director', 'Screenwriter', 'Screenplay Refinement',
+  'Cinematographer', 'Sound Designer', 'Cast Selection', 'Location Research',
+  'VFX Planning', 'Mood Board', 'Editor',
+]
 
 interface AgentProgress {
   step: number
@@ -98,6 +103,8 @@ function CreateFilmContent() {
         setAgentStates((prev) => ({ ...prev, [a]: { status: 'completed', detail: '' } })),
       )
 
+      addNotification('success', 'Film Created!', `Your ${formData.style} film has been generated successfully.`)
+
       setTimeout(() => {
         router.push(`/projects/${result.project_id}`)
       }, 1500)
@@ -108,20 +115,20 @@ function CreateFilmContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
 
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8 max-w-3xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Create Film</h1>
-            <p className="text-gray-400">Transform your vision into reality with autonomous AI agents</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Create Film</h1>
+            <p className="text-gray-500 dark:text-gray-400">Transform your vision into reality with autonomous AI agents</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-6 space-y-5">
+            <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 space-y-5 shadow-sm dark:shadow-none">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                   Film Concept <span className="text-red-400">*</span>
                 </label>
                 <textarea
@@ -131,18 +138,18 @@ function CreateFilmContent() {
                   rows={4}
                   required
                   disabled={loading}
-                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none text-white placeholder-gray-500 transition-colors"
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Visual Style</label>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Visual Style</label>
                   <select
                     value={formData.style}
                     onChange={(e) => setFormData({ ...formData, style: e.target.value })}
                     disabled={loading}
-                    className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
+                    className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white transition-colors"
                   >
                     <option value="cinematic">Cinematic</option>
                     <option value="documentary">Documentary</option>
@@ -154,7 +161,7 @@ function CreateFilmContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Duration (seconds)</label>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Duration (seconds)</label>
                   <input
                     type="number"
                     value={formData.duration}
@@ -163,18 +170,18 @@ function CreateFilmContent() {
                     max="300"
                     step="10"
                     disabled={loading}
-                    className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
+                    className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">AI Model</label>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">AI Model</label>
                 <select
                   value={formData.model}
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                   disabled={loading}
-                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-white transition-colors"
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white transition-colors"
                 >
                   <option value="gemini-flash-latest">Gemini Flash — Fast & Free</option>
                   <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
@@ -187,7 +194,7 @@ function CreateFilmContent() {
             <button
               type="submit"
               disabled={loading || !formData.prompt || formData.prompt.length < 10}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-700 disabled:to-gray-700 text-white font-bold py-4 rounded-xl text-lg transition-all hover:shadow-lg hover:shadow-purple-500/30 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-300 disabled:to-gray-300 dark:disabled:from-gray-700 dark:disabled:to-gray-700 text-white font-bold py-4 rounded-xl text-lg transition-all hover:shadow-lg hover:shadow-purple-500/30 disabled:cursor-not-allowed"
             >
               <SparklesIcon className="h-6 w-6" />
               {loading ? 'Creating Film...' : 'Create Film'}
@@ -215,9 +222,9 @@ function CreateFilmContent() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 bg-gray-800/60 border border-gray-700/50 rounded-xl p-6"
+              className="mt-6 bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 shadow-sm dark:shadow-none"
             >
-              <h3 className="text-lg font-semibold text-white mb-4">Production Pipeline</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Production Pipeline</h3>
               <div className="space-y-3">
                 {AGENTS.map((agent, i) => {
                   const state = agentStates[agent]

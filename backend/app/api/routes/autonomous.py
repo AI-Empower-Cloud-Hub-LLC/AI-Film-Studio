@@ -14,6 +14,9 @@ from sqlalchemy.orm import Session, selectinload
 from app.agents.orchestrator import AgentOrchestrator
 from app.database import get_db
 from app.models.project import Project, Scene, Script, ProjectStatus
+from app.services.sanitizer import sanitize_prompt, sanitize_title
+from app.api.deps import get_current_user, get_optional_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +27,9 @@ router = APIRouter()
 _orchestrators: Dict[str, AgentOrchestrator] = {}
 
 
-def _get_orchestrator(model: str) -> AgentOrchestrator:
+def _get_orchestrator(model: str = "default") -> AgentOrchestrator:
     if model not in _orchestrators:
-        from app.core.config import settings
-        _orchestrators[model] = AgentOrchestrator(
-            model=model,
-            anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        )
+        _orchestrators[model] = AgentOrchestrator()
     return _orchestrators[model]
 
 
@@ -75,6 +74,11 @@ def _persist_project(
         model=request.model,
         status=ProjectStatus.completed,
         director_vision=director_out.get("vision", ""),
+        refined_screenplay=result.get("refined_screenplay"),
+        cast_data=result.get("cast"),
+        location_data=result.get("locations"),
+        vfx_data=result.get("vfx_plan"),
+        mood_board_data=result.get("mood_board"),
     )
     db.add(project)
     db.flush()  # populate project.id before adding children
@@ -126,6 +130,8 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
     """
     from app.services.ws_manager import ws_manager
 
+    request.prompt = sanitize_prompt(request.prompt)
+    request.style = sanitize_title(request.style)
     logger.info(f"Film creation started: {request.prompt[:60]}...")
 
     project_id = str(uuid.uuid4())
@@ -178,39 +184,63 @@ async def create_autonomous_film(request: FilmRequest, db: Session = Depends(get
             "media_assets": result.get("media_assets", {}),
             "final_timeline": result.get("final_timeline", {}),
             "workflow_steps": result.get("workflow_steps", []),
+            "refined_screenplay": result.get("refined_screenplay"),
+            "cast": result.get("cast"),
+            "locations": result.get("locations"),
+            "vfx_plan": result.get("vfx_plan"),
+            "mood_board": result.get("mood_board"),
         },
     )
 
 
-@router.get("/projects", response_model=List[Dict[str, Any]])
-def list_projects(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    """List all film projects, newest first."""
-    # Use a COUNT subquery to avoid the N+1 per-project lazy-load.
+@router.get("/projects")
+def list_projects(
+    page: int = 1,
+    per_page: int = 20,
+    search: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    style_filter: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """List film projects with pagination, search, and filters."""
     scene_count_sq = (
         db.query(func.count(Scene.id))
         .filter(Scene.project_id == Project.id)
         .correlate(Project)
         .scalar_subquery()
     )
-    rows = (
-        db.query(Project, scene_count_sq.label("scene_count"))
-        .order_by(Project.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    return [
-        {
-            "id": p.id,
-            "title": p.title,
-            "style": p.style,
-            "duration": p.duration,
-            "status": p.status,
-            "scene_count": count,
-            "created_at": p.created_at.isoformat(),
-        }
-        for p, count in rows
-    ]
+
+    query = db.query(Project, scene_count_sq.label("scene_count"))
+
+    if search:
+        query = query.filter(Project.title.ilike(f"%{search}%"))
+    if status_filter:
+        query = query.filter(Project.status == status_filter)
+    if style_filter:
+        query = query.filter(Project.style == style_filter)
+
+    total = query.count()
+    offset = (max(page, 1) - 1) * per_page
+    rows = query.order_by(Project.created_at.desc()).offset(offset).limit(per_page).all()
+
+    return {
+        "items": [
+            {
+                "id": p.id,
+                "title": p.title,
+                "style": p.style,
+                "duration": p.duration,
+                "status": p.status,
+                "scene_count": count,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p, count in rows
+        ],
+        "total": total,
+        "page": max(page, 1),
+        "per_page": per_page,
+        "total_pages": max(1, (total + per_page - 1) // per_page),
+    }
 
 
 @router.get("/projects/{project_id}", response_model=Dict[str, Any])
@@ -257,14 +287,57 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
             for s in sorted(project.scenes, key=lambda x: x.scene_number)
         ],
         "script": script_content,
+        "refined_screenplay": project.refined_screenplay,
+        "cast": project.cast_data,
+        "locations": project.location_data,
+        "vfx_plan": project.vfx_data,
+        "mood_board": project.mood_board_data,
     }
+
+
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    style: Optional[str] = None
+    duration: Optional[int] = None
+
+
+@router.patch("/projects/{project_id}", response_model=Dict[str, Any])
+def update_project(project_id: str, body: ProjectUpdate, db: Session = Depends(get_db)):
+    """Update a project's editable fields."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(project, field, value)
+    db.commit()
+    db.refresh(project)
+    return {"id": project.id, "title": project.title, "style": project.style, "duration": project.duration, "status": project.status}
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, db: Session = Depends(get_db)):
+    """Delete a project and all its scenes/scripts."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db.delete(project)
+    db.commit()
+    return {"status": "deleted", "project_id": project_id}
 
 
 @router.get("/agent-status")
 def get_agent_status():
-    """Return memory stats for all running orchestrators."""
+    """Return status for all agents including expanded pipeline."""
+    from app.services.wav2lip_service import wav2lip_service
     return {
         "status": "active",
+        "agents_count": 10,
+        "agents": [
+            "Director", "Screenwriter", "ScreenplayRefinement",
+            "Cinematographer", "SoundDesigner", "CastSelection",
+            "LocationResearch", "VFXPlanning", "MoodBoard", "Editor",
+        ],
+        "lip_sync": wav2lip_service.status,
         "orchestrators": {
             model: orch.get_agent_status()
             for model, orch in _orchestrators.items()
@@ -272,9 +345,45 @@ def get_agent_status():
     }
 
 
+@router.get("/graph")
+def get_graph_structure():
+    """Return the LangGraph pipeline topology for visualization."""
+    orchestrator = _get_orchestrator("default")
+    return orchestrator.get_graph_structure()
+
+
+@router.get("/pipeline-history")
+def get_pipeline_history():
+    """Return pipeline run history."""
+    orchestrator = _get_orchestrator("default")
+    history = orchestrator.get_run_history()
+    return {"runs": history}
+
+
+@router.get("/admin/stats")
+def admin_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Admin dashboard: system-wide statistics. Requires admin role."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    total_projects = db.query(func.count(Project.id)).scalar()
+    total_users = db.query(func.count(User.id)).scalar()
+    total_scenes = db.query(func.count(Scene.id)).scalar()
+    completed = db.query(func.count(Project.id)).filter(Project.status == ProjectStatus.completed).scalar()
+    return {
+        "total_projects": total_projects,
+        "total_users": total_users,
+        "total_scenes": total_scenes,
+        "completed_projects": completed,
+        "agents_count": 10,
+        "pipeline_runs": len(_get_orchestrator("default").get_run_history()),
+    }
+
+
 @router.post("/clear-memory")
-def clear_agent_memory():
-    """Clear in-memory context from all agents."""
+def clear_agent_memory(current_user: User = Depends(get_current_user)):
+    """Clear in-memory context from all agents. Requires admin role."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     for orch in _orchestrators.values():
         orch.clear_all_memory()
     return {"status": "success", "message": "All agent memories cleared"}

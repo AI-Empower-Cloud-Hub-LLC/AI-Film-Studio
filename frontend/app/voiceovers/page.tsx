@@ -27,7 +27,7 @@ function VoiceoversContent() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadNarrations = async (id: string) => {
@@ -80,20 +80,20 @@ function VoiceoversContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-1">Voiceovers</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Voiceovers</h1>
               <p className="text-gray-400">AI-generated narration and dialogue audio tracks</p>
             </div>
             {narrations.length > 0 && (
               <button
                 onClick={generateAll}
                 disabled={generatingScene !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg text-sm font-medium text-gray-900 dark:text-white transition-colors"
               >
                 <SparklesIcon className="h-4 w-4" />
                 Generate All Voiceovers
@@ -110,7 +110,7 @@ function VoiceoversContent() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   selectedProject === p.id
                     ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                    : 'bg-gray-800/40 border-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-800/70'
+                    : 'bg-gray-100 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/70'
                 }`}
               >
                 {p.title.slice(0, 40)}
@@ -140,7 +140,7 @@ function VoiceoversContent() {
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.06 }}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-5"
+                  className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-5"
                 >
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-green-500/10 rounded-xl flex-shrink-0">
@@ -148,11 +148,11 @@ function VoiceoversContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-sm font-semibold text-white">Scene {scene.scene_number}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Scene {scene.scene_number}</span>
                         <span className="px-2 py-0.5 bg-gray-700 text-gray-400 text-xs rounded-full">{scene.mood}</span>
                         <span className="text-xs text-gray-500">{scene.duration}s</span>
                       </div>
-                      <p className="text-sm text-gray-300 mb-3">{scene.narration}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{scene.narration}</p>
 
                       {/* Audio controls */}
                       <div className="flex items-center gap-3 mb-3">

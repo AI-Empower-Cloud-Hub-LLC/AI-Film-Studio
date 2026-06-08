@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.services.prompt_optimizer import prompt_optimizer
+from app.services.sanitizer import sanitize_prompt
 
 router = APIRouter()
 
@@ -23,6 +24,7 @@ class PromptOptimizeResponse(BaseModel):
 
 @router.post("/optimize", response_model=PromptOptimizeResponse)
 async def optimize_prompt(body: PromptOptimizeRequest):
+    body.prompt = sanitize_prompt(body.prompt)
     result = await prompt_optimizer.optimize(
         prompt=body.prompt,
         style=body.style,

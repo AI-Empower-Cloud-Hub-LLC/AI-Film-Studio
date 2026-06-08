@@ -21,7 +21,7 @@ function StoryboardsContent() {
   const [frameImages, setFrameImages] = useState<Record<number, string>>({})
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadFrames = async (id: string) => {
@@ -59,20 +59,20 @@ function StoryboardsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-0 lg:pl-64">
         <div className="px-8 py-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-1">Storyboards</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Storyboards</h1>
               <p className="text-gray-400">Visual planning frames derived from scene breakdowns</p>
             </div>
             {frames.length > 0 && (
               <button
                 onClick={generateAll}
                 disabled={generatingFrame !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium text-gray-900 dark:text-white transition-colors"
               >
                 <SparklesIcon className="h-4 w-4" />
                 Generate All Images
@@ -89,7 +89,7 @@ function StoryboardsContent() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   selectedProject === p.id
                     ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                    : 'bg-gray-800/40 border-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-800/70'
+                    : 'bg-gray-100 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/70'
                 }`}
               >
                 {p.title.slice(0, 40)}
@@ -119,7 +119,7 @@ function StoryboardsContent() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.06 }}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-xl overflow-hidden"
+                  className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl overflow-hidden"
                 >
                   {/* Frame visual */}
                   <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative overflow-hidden">
@@ -148,13 +148,13 @@ function StoryboardsContent() {
                     <div className="absolute top-3 left-3 px-2 py-0.5 bg-black/60 text-white text-xs font-medium rounded">
                       Frame {frame.scene_number}
                     </div>
-                    <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-gray-300 text-xs rounded">
+                    <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-gray-600 dark:text-gray-300 text-xs rounded">
                       {frame.shot_type}
                     </div>
                   </div>
 
                   <div className="p-4">
-                    <p className="text-sm text-gray-300 mb-2 line-clamp-2">{frame.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">{frame.description}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full">{frame.mood}</span>
                       <span>{frame.duration}s</span>

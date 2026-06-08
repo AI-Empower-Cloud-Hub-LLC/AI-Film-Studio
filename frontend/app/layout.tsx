@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="font-sans">
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans dark:bg-gray-950 bg-white transition-colors">
         <Providers>
           {children}
         </Providers>

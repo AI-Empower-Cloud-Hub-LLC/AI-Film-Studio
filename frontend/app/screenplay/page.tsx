@@ -14,7 +14,7 @@ export default function ScreenplayPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectsApi.list().then(setProjects).catch(() => {}).finally(() => setLoading(false))
+    projectsApi.list({ per_page: 100 }).then(r => setProjects(r.items)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loadScreenplay = async (id: string) => {
@@ -28,12 +28,12 @@ export default function ScreenplayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:via-gray-900 dark:to-black">
       <Sidebar />
       <div className="pl-64">
         <div className="px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-1">Screenplay</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Screenplay</h1>
             <p className="text-gray-400">Refined screenplay with camera directions and production notes</p>
           </div>
 
@@ -45,7 +45,7 @@ export default function ScreenplayPage() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   selectedProject === p.id
                     ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                    : 'bg-gray-800/40 border-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-800/70'
+                    : 'bg-gray-100 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/70'
                 }`}
               >
                 {p.title.slice(0, 40)}
@@ -84,7 +84,7 @@ export default function ScreenplayPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6"
+                  className="bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-xl p-6"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-mono font-bold text-yellow-400">
@@ -93,7 +93,7 @@ export default function ScreenplayPage() {
                     <span className="text-xs text-gray-500">Scene {scene.scene_number}</span>
                   </div>
 
-                  <p className="text-gray-300 mb-4 font-mono text-sm leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 font-mono text-sm leading-relaxed">
                     {scene.action_lines}
                   </p>
 
@@ -101,11 +101,11 @@ export default function ScreenplayPage() {
                     <div className="mb-4 space-y-3">
                       {scene.dialogue.map((d, j) => (
                         <div key={j} className="text-center font-mono">
-                          <div className="text-sm font-bold text-white uppercase">{d.character}</div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white uppercase">{d.character}</div>
                           {d.parenthetical && (
                             <div className="text-xs text-gray-500">({d.parenthetical})</div>
                           )}
-                          <div className="text-sm text-gray-300">{d.line}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300">{d.line}</div>
                         </div>
                       ))}
                     </div>
