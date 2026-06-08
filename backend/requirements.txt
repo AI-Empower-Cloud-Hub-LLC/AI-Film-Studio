@@ -1,8 +1,8 @@
 # FastAPI Framework
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+pydantic>=2.7.4,<3.0.0
+pydantic-settings>=2.1.0
 
 # AI/ML Libraries
 openai>=1.13.3
@@ -61,13 +61,13 @@ gTTS>=2.5.0
 reportlab>=4.0
 
 # AI/ML Prompt Optimization
-langchain-core>=0.1.0,<2.0.0
-langgraph>=0.2.0,<2.0.0
+langchain-core==1.4.0
+langgraph==1.2.1
 google-generativeai>=0.5.0
 
 # AutoGen (alternative orchestration framework)
-autogen-agentchat>=0.4.0,<1.0.0
-autogen-ext[openai]>=0.4.0,<1.0.0
+autogen-agentchat==0.7.5
+autogen-ext[openai]==0.7.5
 
 # WebSocket
 websockets>=12.0
