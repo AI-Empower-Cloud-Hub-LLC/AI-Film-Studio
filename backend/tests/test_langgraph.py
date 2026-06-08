@@ -90,8 +90,11 @@ async def test_create_film_returns_workflow_steps(orchestrator):
     agent_names = [s["agent"] for s in steps]
     assert "Director" in agent_names
     assert "Screenwriter" in agent_names
+    assert "Screenplay Refinement" in agent_names
     assert "Cinematographer" in agent_names
     assert "Sound Designer" in agent_names
+    assert "Cast Selection" in agent_names
+    assert "Location Research" in agent_names
     assert "Editor" in agent_names
     assert "Quality Review" in agent_names
 
@@ -108,6 +111,7 @@ async def test_create_film_returns_node_timings(orchestrator):
     timings = result.get("node_timings", {})
     assert "director" in timings
     assert "screenwriter" in timings
+    assert "screenplay_refinement" in timings
     assert "editor" in timings
     assert "review" in timings
     for v in timings.values():
@@ -132,8 +136,8 @@ async def test_create_film_updates_run_history(orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_create_film_parallel_produces_both_outputs(orchestrator):
-    """Parallel node produces both cinematography and sound outputs."""
+async def test_create_film_parallel_produces_all_outputs(orchestrator):
+    """Parallel nodes produce cinematography, sound, cast, location, vfx, and mood_board outputs."""
     result = await orchestrator.create_film(
         user_prompt="A dancer on a moonlit stage",
         style="cinematic",
@@ -142,3 +146,7 @@ async def test_create_film_parallel_produces_both_outputs(orchestrator):
     assert result["status"] == "success"
     assert "cinematography" in result
     assert "sound" in result
+    assert "cast" in result
+    assert "locations" in result
+    assert "vfx_plan" in result
+    assert "mood_board" in result
