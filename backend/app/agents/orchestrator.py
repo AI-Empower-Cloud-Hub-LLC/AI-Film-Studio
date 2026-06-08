@@ -66,7 +66,7 @@ class PipelineState(TypedDict, total=False):
     style: str
     duration: int
     # Agent outputs
-    director: Dict[str, Any]
+    director_output: Dict[str, Any]
     script: Dict[str, Any]
     refined_screenplay: Dict[str, Any]
     cinematography: Dict[str, Any]
@@ -171,7 +171,7 @@ class AgentOrchestrator:
                 return {"status": "error", "error": final_state["error"]}
 
             # --- Media generation phase (video + voiceover) ---
-            director_out = final_state.get("director", {})
+            director_out = final_state.get("director_output", {})
             script_out = final_state.get("script", {})
             cin_out = final_state.get("cinematography", {})
             snd_out = final_state.get("sound", {})
@@ -256,7 +256,7 @@ class AgentOrchestrator:
                 "user_prompt": user_prompt,
                 "style": style,
                 "duration": duration,
-                "director": final_state.get("director", {}),
+                "director": final_state.get("director_output", {}),
                 "script": final_state.get("script", {}),
                 "refined_screenplay": final_state.get("refined_screenplay", {}),
                 "cinematography": final_state.get("cinematography", {}),
@@ -355,7 +355,7 @@ class AgentOrchestrator:
                 await notify(1, "Director", "completed", f"{len(output.get('scenes', []))} scenes planned")
                 timings = dict(state.get("node_timings", {}))
                 timings["director"] = round(time.time() - start, 2)
-                return {**state, "director": output, "node_timings": timings}
+                return {**state, "director_output": output, "node_timings": timings}
             except Exception as exc:
                 return _handle_node_error(state, "director", str(exc), step, start)
 
@@ -364,7 +364,7 @@ class AgentOrchestrator:
             step = _add_step(state, "Screenwriter", "running", "Writing script and dialogue")
             await notify(2, "Screenwriter", "running", "Writing script and dialogue")
             try:
-                director_out = state.get("director", {})
+                director_out = state.get("director_output", {})
                 output = await orchestrator.screenwriter.process({
                     "vision": director_out.get("vision", ""),
                     "scenes": director_out.get("scenes", []),
@@ -383,7 +383,7 @@ class AgentOrchestrator:
             await notify(3, "Screenplay Refinement", "running", "Polishing screenplay with camera directions")
             try:
                 script_out = state.get("script", {})
-                director_out = state.get("director", {})
+                director_out = state.get("director_output", {})
                 output = await orchestrator.screenplay_refinement.process({
                     "script_scenes": script_out.get("script_scenes", []),
                     "vision": director_out.get("vision", ""),
@@ -411,7 +411,7 @@ class AgentOrchestrator:
             await notify(6, "Cast Selection", "running", "Casting characters (parallel)")
             await notify(7, "Location Research", "running", "Scouting locations (parallel)")
 
-            director_out = state.get("director", {})
+            director_out = state.get("director_output", {})
             script_out = state.get("script", {})
 
             async def _run_cinematographer():
@@ -509,7 +509,7 @@ class AgentOrchestrator:
             await notify(8, "VFX Planning", "running", "Analyzing VFX requirements (parallel)")
             await notify(9, "Mood Board", "running", "Creating visual style guide (parallel)")
 
-            director_out = state.get("director", {})
+            director_out = state.get("director_output", {})
             cin_out = state.get("cinematography", {})
 
             async def _run_vfx():
@@ -567,7 +567,7 @@ class AgentOrchestrator:
             step = _add_step(state, "Editor", "running", "Assembling final timeline")
             await notify(10, "Editor", "running", "Assembling final timeline")
             try:
-                director_out = state.get("director", {})
+                director_out = state.get("director_output", {})
                 scenes = director_out.get("scenes", [])
                 media_assets = orchestrator._build_media_asset_list(scenes)
                 output = await orchestrator.editor.process({
@@ -590,7 +590,7 @@ class AgentOrchestrator:
             await notify(11, "Quality Review", "running", "Director reviewing final output")
 
             revision_count = state.get("revision_count", 0)
-            director_out = state.get("director", {})
+            director_out = state.get("director_output", {})
             script_out = state.get("script", {})
             timeline_out = state.get("final_timeline", {})
 
