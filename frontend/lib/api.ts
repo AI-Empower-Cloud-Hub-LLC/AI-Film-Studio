@@ -320,6 +320,9 @@ export const exportsApi = {
   zipUrl(projectId: string) {
     return `${API_BASE}/api/v1/exports/zip/${projectId}`
   },
+  imagesUrl(projectId: string) {
+    return `${API_BASE}/api/v1/exports/zip/${projectId}`
+  },
 }
 
 export function mediaUrl(path: string): string {
