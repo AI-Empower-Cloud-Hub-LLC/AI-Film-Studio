@@ -18,10 +18,14 @@ from app.api.v1.endpoints import (
     payments,
     analytics,
     cdn,
+    health,
 )
 from app.api.routes import autonomous
 
 api_router = APIRouter()
+
+# Health check
+api_router.include_router(health.router, tags=["Health"])
 
 # Authentication
 api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])

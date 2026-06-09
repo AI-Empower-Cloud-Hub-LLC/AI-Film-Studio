@@ -24,6 +24,7 @@ from app.middleware import (
     general_exception_handler,
     LoggingMiddleware,
 )
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.database import create_tables
 from app.services.ws_manager import ws_manager
 
@@ -89,6 +90,9 @@ app.add_middleware(
 
 # Logging Middleware
 app.add_middleware(LoggingMiddleware)
+
+# Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Exception Handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
